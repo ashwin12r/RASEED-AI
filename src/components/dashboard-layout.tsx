@@ -13,7 +13,6 @@ import {
   SidebarMenuItem, 
   SidebarMenuButton, 
   SidebarFooter, 
-  SidebarTrigger, 
   SidebarInset,
   useSidebar
 } from "@/components/ui/sidebar"
@@ -107,14 +106,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-10 md:hidden flex items-center justify-between p-2 border-b bg-background/80 backdrop-blur-sm">
-            <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+        <header className="sticky top-0 z-10 md:hidden flex items-center p-2 border-b bg-background/80 backdrop-blur-sm">
+            <button onClick={toggleSidebar} className="flex items-center gap-2 font-bold text-lg p-2 -ml-2 rounded-md hover:bg-accent focus:outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="p-1.5 bg-primary rounded-lg">
                     <Wallet className="w-5 h-5 text-primary-foreground" />
                 </div>
                 <span className="text-foreground">Project Raseed</span>
-            </Link>
-          <SidebarTrigger />
+            </button>
         </header>
         <main className="p-4 lg:p-6">
           {children}
