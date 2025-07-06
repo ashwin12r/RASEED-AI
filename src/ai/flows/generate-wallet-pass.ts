@@ -12,6 +12,18 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Receipt } from '@/hooks/use-receipts';
 
 
+// Define a Zod schema that matches the Receipt interface
+const ReceiptSchema = z.object({
+  id: z.string(),
+  vendor: z.string(),
+  date: z.string().describe("The date of the purchase in ISO format."),
+  total: z.number().describe("The total amount of the receipt."),
+  category: z.string().describe("The category of the purchase."),
+  items: z.array(z.string()).describe("A list of items purchased."),
+  receiptDataUri: z.string().describe("The data URI of the receipt image."),
+});
+
+
 const GenerateWalletPassOutputSchema = z.object({
   jwt: z.string().describe('The signed JWT for the Google Wallet pass.'),
 });
@@ -24,7 +36,7 @@ export async function generateWalletPass(receipt: Receipt): Promise<GenerateWall
 const generateWalletPassFlow = ai.defineFlow(
   {
     name: 'generateWalletPassFlow',
-    inputSchema: z.any(), // Using any because Receipt type is complex for Zod here
+    inputSchema: ReceiptSchema,
     outputSchema: GenerateWalletPassOutputSchema,
   },
   async (receipt) => {
