@@ -41,7 +41,7 @@ export default function ReceiptsPage() {
     };
     setIsReading(receipt.id);
     try {
-      const textToRead = `Receipt from ${receipt.vendor} on ${new Date(receipt.date).toLocaleDateString()}. Total amount is ${receipt.total.toFixed(2)} rupees. The category is ${receipt.category}. It contains ${receipt.items.length} items.`;
+      const textToRead = `Receipt from ${receipt.vendor} on ${new Date(receipt.date).toLocaleDateString()}. Total amount is ${receipt.total.toFixed(2)} rupees. The category is ${receipt.category}. It contains ${Array.isArray(receipt.items) ? receipt.items.length : 0} items.`;
       const response = await textToSpeech(textToRead);
       if (response.media && audioRef.current) {
         audioRef.current.src = response.media;
@@ -70,6 +70,14 @@ export default function ReceiptsPage() {
   }
 
   const handleAddToWallet = async (receipt: Receipt) => {
+    if (!Array.isArray(receipt.items)) {
+      toast({
+        title: "Invalid Receipt Data",
+        description: "Cannot add to wallet. The items for this receipt are not formatted correctly. Please try deleting and re-adding it.",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsWalletLoading(receipt.id);
     try {
       const { jwt } = await generateWalletPass(receipt);
@@ -132,7 +140,7 @@ export default function ReceiptsPage() {
                     <Badge variant="outline" className="capitalize">{receipt.category}</Badge>
                   </TableCell>
                   <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{receipt.items.length}</TableCell>
+                  <TableCell>{Array.isArray(receipt.items) ? receipt.items.length : 0}</TableCell>
                   <TableCell className="text-right font-medium">₹{receipt.total.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

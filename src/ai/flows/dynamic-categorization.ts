@@ -45,7 +45,7 @@ const categorizeReceiptPrompt = ai.definePrompt({
 
   Receipt Image: {{media url=receiptDataUri}}
   
-  Based on this information, extract the vendor, categorize the receipt, list the items purchased, and identify the total amount spent.
+  Based on this information, extract the vendor, categorize the receipt, list all items purchased as an array of strings, and identify the total amount spent.
   Return the output in JSON format. Do not include any other prose.
 `,
 });
