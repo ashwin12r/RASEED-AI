@@ -1,5 +1,6 @@
 
 'use client'
+import React from "react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,15 +15,6 @@ import {
 import { AddReceiptDialog } from "@/components/add-receipt-dialog"
 import { Progress } from "@/components/ui/progress"
 import { useReceipts } from "@/hooks/use-receipts"
-
-const chartData = [
-  { month: "January", total: 203350 },
-  { month: "February", total: 177122 },
-  { month: "March", total: 239870 },
-  { month: "April", total: 211069 },
-  { month: "May", total: 258960 },
-  { month: "June", total: 194635 },
-];
 
 const chartConfig = {
   total: {
@@ -67,6 +59,33 @@ export default function DashboardPage() {
     amount: r.total,
     category: r.category,
   }));
+  
+  const chartData = React.useMemo(() => {
+    const data: { month: string; total: number }[] = [];
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      return {
+        name: d.toLocaleString('default', { month: 'long' }),
+        year: d.getFullYear(),
+        month: d.getMonth(),
+      };
+    }).reverse();
+
+    months.forEach(m => {
+        const total = receipts
+            .filter(r => {
+                const receiptDate = new Date(r.date);
+                return receiptDate.getMonth() === m.month && receiptDate.getFullYear() === m.year;
+            })
+            .reduce((sum, r) => sum + r.total, 0);
+        
+        data.push({ month: m.name, total: Math.round(total) });
+    });
+    
+    return data;
+  }, [receipts]);
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -98,7 +117,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-               <Badge variant="outline" className="text-sm py-1 px-3">{topCategoryName}</Badge>
+               <Badge variant="outline" className="text-sm py-1 px-3 capitalize">{topCategoryName}</Badge>
                <p className="text-3xl font-bold">₹{topCategoryAmount.toFixed(2)}</p>
             </div>
           </CardContent>
@@ -110,10 +129,10 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex items-center justify-between">
-                <p className="text-2xl font-bold">₹37,350 / ₹41,500</p>
-                <p className="text-lg font-medium">90%</p>
+                <p className="text-2xl font-bold">₹0 / ₹41,500</p>
+                <p className="text-lg font-medium">0%</p>
             </div>
-            <Progress value={90} aria-label="Savings goal progress" />
+            <Progress value={0} aria-label="Savings goal progress" />
           </CardContent>
         </Card>
       </div>
@@ -171,13 +190,13 @@ export default function DashboardPage() {
                   <TableRow key={tx.vendor + tx.date}>
                     <TableCell>
                       <div className="font-medium">{tx.vendor}</div>
-                      <div className="text-sm text-muted-foreground">{tx.category}</div>
+                      <div className="text-sm text-muted-foreground capitalize">{tx.category}</div>
                     </TableCell>
                     <TableCell className="text-right font-medium">₹{tx.amount.toFixed(2)}</TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={2} className="text-center">No transactions yet.</TableCell>
+                    <TableCell colSpan={2} className="h-24 text-center">No transactions yet.</TableCell>
                   </TableRow>
                 )}
               </TableBody>

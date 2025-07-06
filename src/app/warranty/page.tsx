@@ -1,19 +1,97 @@
+
 'use client'
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ShieldCheck } from "lucide-react"
+import { ShieldCheck, Loader2 } from "lucide-react"
+import { useReceipts } from "@/hooks/use-receipts"
+import { trackWarranty } from "@/ai/flows/warranty-tracker"
+import { useToast } from "@/hooks/use-toast"
+import { differenceInCalendarDays, isAfter } from "date-fns"
 
-const warrantyItems = [
-  { id: "W001", productName: "Smart TV 55-inch", purchaseDate: "2024-06-21", warrantyEndDate: "2025-06-21", status: "Active" },
-  { id: "W002", productName: "Wireless Headphones", purchaseDate: "2023-11-15", warrantyEndDate: "2024-11-15", status: "Active" },
-  { id: "W003", productName: "Laptop Pro", purchaseDate: "2023-01-10", warrantyEndDate: "2025-01-10", status: "Active" },
-  { id: "W004", productName: "Microwave Oven", purchaseDate: "2022-08-01", warrantyEndDate: "2024-08-01", status: "Expiring Soon" },
-  { id: "W005", productName: "Gaming Mouse", purchaseDate: "2023-05-20", warrantyEndDate: "2024-05-20", status: "Expired" },
-]
+interface WarrantyItem {
+  id: string;
+  productName: string;
+  purchaseDate: string;
+  warrantyEndDate: string;
+  status: "Active" | "Expiring Soon" | "Expired";
+}
+
 
 export default function WarrantyPage() {
+    const [warranties, setWarranties] = useState<WarrantyItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { receipts } = useReceipts();
+    const { toast } = useToast();
+
+    useEffect(() => {
+        const fetchWarranties = async () => {
+            if (receipts.length === 0) {
+                setIsLoading(false);
+                setWarranties([]);
+                return;
+            }
+
+            setIsLoading(true);
+            try {
+                const allWarrantiesPromises = receipts.map(receipt =>
+                    trackWarranty({ receiptDataUri: receipt.receiptDataUri })
+                );
+
+                const results = await Promise.allSettled(allWarrantiesPromises);
+                
+                const newWarranties: WarrantyItem[] = [];
+                results.forEach((result, index) => {
+                    if (result.status === 'fulfilled' && result.value.items) {
+                        result.value.items.forEach(item => {
+                            try {
+                                const today = new Date();
+                                const endDate = new Date(item.warrantyEndDate);
+                                let status: WarrantyItem["status"] = "Active";
+
+                                if (isAfter(today, endDate)) {
+                                    status = "Expired";
+                                } else if (differenceInCalendarDays(endDate, today) <= 30) {
+                                    status = "Expiring Soon";
+                                }
+
+                                newWarranties.push({
+                                    id: `${receipts[index].id}-${item.productName}`,
+                                    productName: item.productName,
+                                    purchaseDate: new Date(item.purchaseDate).toLocaleDateString(),
+                                    warrantyEndDate: endDate.toLocaleDateString(),
+                                    status,
+                                });
+                            } catch(e) {
+                                console.error('Could not parse date from warranty', e);
+                            }
+                        });
+                    } else if (result.status === 'rejected') {
+                         console.error("Failed to fetch warranty for a receipt:", result.reason);
+                    }
+                });
+
+                setWarranties(newWarranties);
+
+            } catch (error) {
+                 console.error("Error fetching warranties:", error);
+                 toast({
+                    title: "Error",
+                    description: "Could not fetch warranty information.",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (receipts.length > 0 || localStorage.getItem('receipts') === null) {
+          fetchWarranties();
+        }
+    }, [receipts, toast]);
+
+
   const getStatusVariant = (status: string) => {
     switch (status) {
       case "Active":
@@ -52,16 +130,31 @@ export default function WarrantyPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {warrantyItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.productName}</TableCell>
-                  <TableCell>{item.purchaseDate}</TableCell>
-                  <TableCell>{item.warrantyEndDate}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={getStatusVariant(item.status) as any}>{item.status}</Badge>
-                  </TableCell>
+              {isLoading ? (
+                  <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            <span>Scanning receipts for warranties...</span>
+                          </div>
+                      </TableCell>
+                  </TableRow>
+              ) : warranties.length > 0 ? (
+                warranties.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.productName}</TableCell>
+                    <TableCell>{item.purchaseDate}</TableCell>
+                    <TableCell>{item.warrantyEndDate}</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={getStatusVariant(item.status) as any}>{item.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                 <TableRow>
+                    <TableCell colSpan={4} className="text-center h-24">No warranties found. Add receipts to get started.</TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

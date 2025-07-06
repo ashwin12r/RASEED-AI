@@ -29,6 +29,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [receiptDataUri, setReceiptDataUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const { toast } = useToast();
@@ -41,16 +42,19 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
     if (selectedFile) {
         const reader = new FileReader();
         reader.onloadend = () => {
-            setFilePreview(reader.result as string);
+            const dataUri = reader.result as string;
+            setFilePreview(dataUri);
+            setReceiptDataUri(dataUri);
         };
         reader.readAsDataURL(selectedFile);
     } else {
         setFilePreview(null);
+        setReceiptDataUri(null);
     }
   }
 
   const handleAnalyze = async () => {
-    if (!file) {
+    if (!file || !receiptDataUri) {
       toast({
         title: "No file selected",
         description: "Please select a receipt image to analyze.",
@@ -63,25 +67,18 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
     setAnalysisResult(null);
 
     try {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = async (e) => {
-            const receiptDataUri = e.target?.result as string;
-            
-            // Run analyses in parallel
-            const [categoryResult, fraudResult] = await Promise.all([
-                categorizeReceipt({ receiptDataUri }),
-                detectFraud({ receiptDataUri })
-            ]);
+        // Run analyses in parallel
+        const [categoryResult, fraudResult] = await Promise.all([
+            categorizeReceipt({ receiptDataUri }),
+            detectFraud({ receiptDataUri })
+        ]);
 
-            setAnalysisResult({ category: categoryResult, fraud: fraudResult });
-            
-            toast({
-                title: "Analysis Complete",
-                description: "The receipt has been successfully analyzed.",
-            });
-            setIsLoading(false);
-        };
+        setAnalysisResult({ category: categoryResult, fraud: fraudResult });
+        
+        toast({
+            title: "Analysis Complete",
+            description: "The receipt has been successfully analyzed.",
+        });
     } catch (error) {
         console.error("Analysis failed:", error);
         toast({
@@ -89,6 +86,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
             description: "There was an error analyzing your receipt. Please try again.",
             variant: "destructive"
         });
+    } finally {
         setIsLoading(false);
     }
   }
@@ -96,13 +94,14 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const resetDialog = () => {
     setFile(null);
     setFilePreview(null);
+    setReceiptDataUri(null);
     setAnalysisResult(null);
     setIsLoading(false);
     setIsOpen(false);
   }
 
   const handleSave = () => {
-    if (!analysisResult) {
+    if (!analysisResult || !receiptDataUri) {
         toast({
             title: "No analysis data",
             description: "Please analyze the receipt first.",
@@ -111,7 +110,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
         return;
     }
 
-    if (analysisResult.fraud.isFraudulent) {
+    if (analysisResult.fraud.isFraudulent && analysisResult.fraud.confidenceScore > 0.75) {
         toast({
             title: "Fraudulent Receipt",
             description: "Cannot save a receipt that is flagged as potentially fraudulent.",
@@ -120,7 +119,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
         return;
     }
 
-    addReceipt(analysisResult.category);
+    addReceipt({ ...analysisResult.category, receiptDataUri });
     
     toast({
         title: "Receipt Saved",
@@ -174,7 +173,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
           {analysisResult && (
             <div className="space-y-4">
               <Alert variant={analysisResult.fraud.isFraudulent ? "destructive" : "default"}>
-                <AlertTriangle className="h-4 w-4" />
+                {analysisResult.fraud.isFraudulent ? <AlertTriangle className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                 <AlertTitle>Fraud Detection</AlertTitle>
                 <AlertDescription>
                   {analysisResult.fraud.isFraudulent ? "Potential fraud detected." : "Looks legitimate."}
@@ -188,7 +187,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
                 <AlertTitle>Dynamic Categorization</AlertTitle>
                 <AlertDescription>
                   <p>Vendor: <span className="font-semibold">{analysisResult.category.vendor}</span></p>
-                  <p>Category: <span className="font-semibold">{analysisResult.category.category}</span></p>
+                  <p>Category: <span className="font-semibold capitalize">{analysisResult.category.category}</span></p>
                   <p>Total: <span className="font-semibold">₹{analysisResult.category.totalAmount.toFixed(2)}</span></p>
                 </AlertDescription>
               </Alert>
@@ -199,8 +198,8 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
         <DialogFooter>
           {analysisResult ? (
             <>
-              <Button variant="outline" onClick={resetDialog}>Cancel</Button>
-              <Button onClick={handleSave} disabled={analysisResult.fraud.isFraudulent}>
+              <Button variant="outline" onClick={() => setAnalysisResult(null)}>Analyze Again</Button>
+              <Button onClick={handleSave} disabled={analysisResult.fraud.isFraudulent && analysisResult.fraud.confidenceScore > 0.75}>
                 <Check className="mr-2 h-4 w-4" />
                 Save Receipt
               </Button>

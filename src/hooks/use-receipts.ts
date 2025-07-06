@@ -10,19 +10,12 @@ export interface Receipt {
   total: number;
   category: string;
   items: number;
+  receiptDataUri: string;
 }
 
 const isBrowser = typeof window !== 'undefined';
 
-const defaultReceipts: Receipt[] = [
-    { id: "R001", vendor: "Grocery Mart", date: "2024-06-23", total: 6259.86, category: "Groceries", items: 12 },
-    { id: "R002", vendor: "The Coffee House", date: "2024-06-22", total: 1062.4, category: "Dining", items: 3 },
-    { id: "R003", vendor: "Tech Store", date: "2024-06-21", total: 41499.17, category: "Electronics", items: 1 },
-    { id: "R004", vendor: "Gas Station", date: "2024-06-20", total: 4573.3, category: "Transport", items: 1 },
-    { id: "R005", vendor: "Book Nook", date: "2024-06-19", total: 2033.5, category: "Entertainment", items: 2 },
-    { id: "R006", vendor: "Home Improvement", date: "2024-06-18", total: 12716.43, category: "Home", items: 5 },
-    { id: "R007", vendor: "Pharmacy", date: "2024-06-17", total: 2817.85, category: "Health", items: 4 },
-];
+const defaultReceipts: Receipt[] = [];
 
 
 export function useReceipts() {
@@ -35,7 +28,6 @@ export function useReceipts() {
       if (item) {
         setReceipts(JSON.parse(item));
       } else {
-        // Load default receipts if local storage is empty
         setReceipts(defaultReceipts);
       }
     } catch (error) {
@@ -47,7 +39,9 @@ export function useReceipts() {
   useEffect(() => {
     if (!isBrowser) return;
     try {
-        if(receipts.length > 0){
+        if (receipts.length === 0 && window.localStorage.getItem('receipts')) {
+             window.localStorage.removeItem('receipts');
+        } else if (receipts.length > 0) {
             window.localStorage.setItem('receipts', JSON.stringify(receipts));
         }
     } catch (error) {
@@ -55,7 +49,7 @@ export function useReceipts() {
     }
   }, [receipts]);
 
-  const addReceipt = (newReceiptData: { vendor: string; category: string; totalAmount: number; items: string[] }) => {
+  const addReceipt = (newReceiptData: { vendor: string; category: string; totalAmount: number; items: string[], receiptDataUri: string }) => {
     const newReceipt: Receipt = {
       id: `R${Date.now()}`,
       vendor: newReceiptData.vendor,
@@ -63,12 +57,19 @@ export function useReceipts() {
       total: newReceiptData.totalAmount,
       category: newReceiptData.category,
       items: newReceiptData.items.length,
+      receiptDataUri: newReceiptData.receiptDataUri,
     };
     setReceipts(prevReceipts => [newReceipt, ...prevReceipts]);
   };
 
   const deleteReceipt = (id: string) => {
-    setReceipts(prevReceipts => prevReceipts.filter(receipt => receipt.id !== id));
+    setReceipts(prevReceipts => {
+        const updatedReceipts = prevReceipts.filter(receipt => receipt.id !== id);
+        if (updatedReceipts.length === 0) {
+            window.localStorage.removeItem('receipts');
+        }
+        return updatedReceipts;
+    });
   };
 
   return { receipts, addReceipt, deleteReceipt };
