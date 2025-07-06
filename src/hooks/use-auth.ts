@@ -37,9 +37,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await signInWithPopup(auth, googleProvider);
       router.push('/');
       toast({ title: "Successfully signed in!" });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing in with Google: ", error);
-      toast({ title: "Sign in failed", description: "Could not sign in with Google.", variant: "destructive" });
+      toast({ title: "Sign in failed", description: error.message || "Could not sign in with Google.", variant: "destructive" });
       setLoading(false);
     }
   };
@@ -50,9 +50,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await firebaseSignOut(auth);
       router.push('/login');
       toast({ title: "Signed out." });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing out: ", error);
-      toast({ title: "Sign out failed", description: "Could not sign out.", variant: "destructive" });
+      toast({ title: "Sign out failed", description: error.message || "Could not sign out.", variant: "destructive" });
     } finally {
         setLoading(false);
     }
