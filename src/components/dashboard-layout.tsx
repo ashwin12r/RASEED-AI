@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Wallet, LayoutDashboard, ReceiptText, LineChart, Settings } from "lucide-react"
+import { Wallet, LayoutDashboard, ReceiptText, LineChart, Settings, ShieldCheck, BellRing } from "lucide-react"
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -21,6 +21,8 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/receipts", label: "Receipts", icon: ReceiptText },
   { href: "/analysis", label: "Analysis", icon: LineChart },
+  { href: "/warranty", label: "Warranty", icon: ShieldCheck },
+  { href: "/reminders", label: "Reminders", icon: BellRing },
 ]
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {

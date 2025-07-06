@@ -12,13 +12,11 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const FraudDetectionInputSchema = z.object({
-  receiptData: z.string().describe('The extracted data from the receipt.'),
-  receiptImage: z
+  receiptDataUri: z
     .string()
     .describe(
-      'A photo of the receipt, as a data URI that must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.' // Corrected the typo here
+      'A photo of the receipt, as a data URI that must include a MIME type and use Base64 encoding. Expected format: \'data:<mimetype>;base64,<encoded_data>\'.'
     ),
-  priorReceipts: z.array(z.string()).optional().describe('A list of prior receipts from the user.'), // Optional array of prior receipts
 });
 
 export type FraudDetectionInput = z.infer<typeof FraudDetectionInputSchema>;
@@ -28,7 +26,7 @@ const FraudDetectionOutputSchema = z.object({
   fraudExplanation: z
     .string()
     .describe('Explanation of why the receipt is considered fraudulent.'),
-  confidenceScore: z.number().describe('A score representing the confidence in the fraud detection.'),
+  confidenceScore: z.number().describe('A score representing the confidence in the fraud detection (0-1).'),
 });
 
 export type FraudDetectionOutput = z.infer<typeof FraudDetectionOutputSchema>;
@@ -42,18 +40,14 @@ const detectFraudPrompt = ai.definePrompt({
   input: {schema: FraudDetectionInputSchema},
   output: {schema: FraudDetectionOutputSchema},
   prompt: `You are an expert in fraud detection specializing in receipts.
-  Given the receipt data and image, determine if the receipt is potentially fraudulent.
-  Consider factors such as inconsistencies in the data, unusual patterns, and anomalies compared to prior receipts.
+  Given the receipt image, determine if the receipt is potentially fraudulent.
+  Look for signs of tampering, unusual formatting, inconsistencies, or other indicators of fraud.
 
-  Receipt Data: {{{receiptData}}}
-  Receipt Image: {{media url=receiptImage}}
-  Prior Receipts: {{#each priorReceipts}}{{{this}}}\n{{/each}}
+  Receipt Image: {{media url=receiptDataUri}}
 
-  Based on your analysis, determine whether the receipt is fraudulent or not and provide an explanation for your reasoning.
-  Also, provide a confidence score representing the certainty of your detection (0-1). If there are no prior receipts, then only use the other provided data.
-
-  Output your answer as JSON conforming to the following schema:
-  ${JSON.stringify(FraudDetectionOutputSchema.describe)}`,
+  Based on your analysis, determine whether the receipt is fraudulent or not, provide an explanation for your reasoning, and a confidence score.
+  Output your answer as JSON.
+  `,
 });
 
 const detectFraudFlow = ai.defineFlow(

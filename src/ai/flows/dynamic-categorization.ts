@@ -18,11 +18,6 @@ const CategorizeReceiptInputSchema = z.object({
     .describe(
       "A receipt, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  ocrText: z.string().describe('The OCR text extracted from the receipt.'),
-  previousSpendingPatterns: z
-    .string()
-    .optional()
-    .describe('Optional: Previous spending patterns of the user.'),
 });
 
 export type CategorizeReceiptInput = z.infer<typeof CategorizeReceiptInputSchema>;
@@ -46,12 +41,10 @@ const categorizeReceiptPrompt = ai.definePrompt({
   output: {schema: CategorizeReceiptOutputSchema},
   prompt: `You are an expert financial assistant.  Your job is to categorize receipts.
 
-  Analyze the following receipt information and categorize it based on the vendor, items, and spending patterns.
+  Analyze the following receipt image and categorize it based on the vendor and items.
 
   Receipt Image: {{media url=receiptDataUri}}
-  OCR Text: {{{ocrText}}}
-  Previous Spending Patterns: {{{previousSpendingPatterns}}}
-
+  
   Based on this information, extract the vendor, categorize the receipt, list the items purchased, and identify the total amount spent.
   Return the output in JSON format. Do not include any other prose.
 `,
