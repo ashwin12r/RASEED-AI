@@ -1,3 +1,4 @@
+
 'use client'
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -12,11 +13,12 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Upload, Sparkles, AlertTriangle, ShieldCheck } from "lucide-react"
+import { Loader2, Upload, Sparkles, AlertTriangle, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { categorizeReceipt, CategorizeReceiptOutput } from "@/ai/flows/dynamic-categorization"
 import { detectFraud, FraudDetectionOutput } from "@/ai/flows/fraud-detection"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useReceipts } from "@/hooks/use-receipts"
 
 type AnalysisResult = {
     category: CategorizeReceiptOutput,
@@ -30,6 +32,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const { toast } = useToast();
+  const { addReceipt } = useReceipts();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
@@ -77,6 +80,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
                 title: "Analysis Complete",
                 description: "The receipt has been successfully analyzed.",
             });
+            setIsLoading(false);
         };
     } catch (error) {
         console.error("Analysis failed:", error);
@@ -85,7 +89,6 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
             description: "There was an error analyzing your receipt. Please try again.",
             variant: "destructive"
         });
-    } finally {
         setIsLoading(false);
     }
   }
@@ -96,6 +99,35 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
     setAnalysisResult(null);
     setIsLoading(false);
     setIsOpen(false);
+  }
+
+  const handleSave = () => {
+    if (!analysisResult) {
+        toast({
+            title: "No analysis data",
+            description: "Please analyze the receipt first.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    if (analysisResult.fraud.isFraudulent) {
+        toast({
+            title: "Fraudulent Receipt",
+            description: "Cannot save a receipt that is flagged as potentially fraudulent.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    addReceipt(analysisResult.category);
+    
+    toast({
+        title: "Receipt Saved",
+        description: "Your receipt has been successfully saved.",
+    });
+    
+    resetDialog();
   }
 
   return (
@@ -165,11 +197,23 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
 
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={resetDialog} disabled={isLoading}>Cancel</Button>
-          <Button onClick={handleAnalyze} disabled={!file || isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-            Upload & Analyze
-          </Button>
+          {analysisResult ? (
+            <>
+              <Button variant="outline" onClick={resetDialog}>Cancel</Button>
+              <Button onClick={handleSave} disabled={analysisResult.fraud.isFraudulent}>
+                <Check className="mr-2 h-4 w-4" />
+                Save Receipt
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={resetDialog} disabled={isLoading}>Cancel</Button>
+              <Button onClick={handleAnalyze} disabled={!file || isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                Analyze Receipt
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

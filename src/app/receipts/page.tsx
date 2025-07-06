@@ -1,3 +1,4 @@
+
 'use client'
 import React from "react"
 import { Button } from "@/components/ui/button"
@@ -15,31 +16,31 @@ import {
 import { AddReceiptDialog } from "@/components/add-receipt-dialog"
 import { textToSpeech } from "@/ai/flows/text-to-speech"
 import { useToast } from "@/hooks/use-toast"
-
-const receipts = [
-  { id: "R001", vendor: "Grocery Mart", date: "2024-06-23", total: 6259.86, category: "Groceries", items: 12 },
-  { id: "R002", vendor: "The Coffee House", date: "2024-06-22", total: 1062.4, category: "Dining", items: 3 },
-  { id: "R003", vendor: "Tech Store", date: "2024-06-21", total: 41499.17, category: "Electronics", items: 1 },
-  { id: "R004", vendor: "Gas Station", date: "2024-06-20", total: 4573.3, category: "Transport", items: 1 },
-  { id: "R005", vendor: "Book Nook", date: "2024-06-19", total: 2033.5, category: "Entertainment", items: 2 },
-  { id: "R006", vendor: "Home Improvement", date: "2024-06-18", total: 12716.43, category: "Home", items: 5 },
-  { id: "R007", vendor: "Pharmacy", date: "2024-06-17", total: 2817.85, category: "Health", items: 4 },
-]
+import { useReceipts, Receipt } from "@/hooks/use-receipts"
 
 export default function ReceiptsPage() {
+  const { receipts, deleteReceipt } = useReceipts()
   const [isReading, setIsReading] = React.useState<string | null>(null)
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
-  const handleReadAloud = async (receipt: (typeof receipts)[0]) => {
-    if (isReading) return;
+  const handleReadAloud = async (receipt: Receipt) => {
+    if (isReading === receipt.id) {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        setIsReading(null);
+        return;
+    };
     setIsReading(receipt.id);
     try {
-      const textToRead = `Receipt from ${receipt.vendor} on ${receipt.date}. Total amount is ${receipt.total.toFixed(2)} rupees. The category is ${receipt.category}. It contains ${receipt.items} items.`;
+      const textToRead = `Receipt from ${receipt.vendor} on ${new Date(receipt.date).toLocaleDateString()}. Total amount is ${receipt.total.toFixed(2)} rupees. The category is ${receipt.category}. It contains ${receipt.items} items.`;
       const response = await textToSpeech(textToRead);
       if (response.media && audioRef.current) {
         audioRef.current.src = response.media;
         audioRef.current.play();
+        audioRef.current.onended = () => setIsReading(null);
       } else {
         throw new Error("No audio media returned from the service.");
       }
@@ -50,9 +51,16 @@ export default function ReceiptsPage() {
         description: "Could not play audio for the receipt.",
         variant: "destructive"
       })
-    } finally {
       setIsReading(null);
     }
+  }
+
+  const handleDelete = (id: string) => {
+    deleteReceipt(id);
+    toast({
+        title: "Receipt Deleted",
+        description: "The receipt has been removed.",
+    });
   }
 
   return (
@@ -81,13 +89,13 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {receipts.map((receipt) => (
+              {receipts.length > 0 ? receipts.map((receipt) => (
                 <TableRow key={receipt.id}>
                   <TableCell className="font-medium">{receipt.vendor}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{receipt.category}</Badge>
                   </TableCell>
-                  <TableCell>{receipt.date}</TableCell>
+                  <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
                   <TableCell>{receipt.items}</TableCell>
                   <TableCell className="text-right font-medium">₹{receipt.total.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
@@ -100,22 +108,16 @@ export default function ReceiptsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>View Details</DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => handleReadAloud(receipt)} disabled={isReading === receipt.id}>
-                          {isReading === receipt.id ? (
-                            'Reading...'
-                          ) : (
-                            <>
-                              <Volume2 className="mr-2 h-4 w-4" />
-                              Read Aloud
-                            </>
-                          )}
+                         <DropdownMenuItem onClick={() => handleReadAloud(receipt)} disabled={isReading !== null && isReading !== receipt.id}>
+                            <Volume2 className="mr-2 h-4 w-4" />
+                            {isReading === receipt.id ? 'Stop' : 'Read Aloud'}
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Wallet className="mr-2 h-4 w-4" />
                           Add to Wallet
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive hover:!text-destructive-foreground">
+                        <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive" onClick={() => handleDelete(receipt.id)}>
                           <Trash2 className="mr-2 h-4 w-4" />
                            Delete
                         </DropdownMenuItem>
@@ -123,12 +125,16 @@ export default function ReceiptsPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
+              )) : (
+                <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24">No receipts found. Add one to get started!</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-      <audio ref={audioRef} className="hidden" />
+      <audio ref={audioRef} className="hidden" onEnded={() => setIsReading(null)} />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+
 'use client'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/chart"
 import { AddReceiptDialog } from "@/components/add-receipt-dialog"
 import { Progress } from "@/components/ui/progress"
+import { useReceipts } from "@/hooks/use-receipts"
 
 const chartData = [
   { month: "January", total: 203350 },
@@ -29,15 +31,43 @@ const chartConfig = {
   },
 }
 
-const recentTransactions = [
-  { vendor: "Grocery Mart", date: "2024-06-23", amount: 6259.86, category: "Groceries" },
-  { vendor: "The Coffee House", date: "2024-06-22", amount: 1062.4, category: "Dining" },
-  { vendor: "Tech Store", date: "2024-06-21", amount: 41499.17, category: "Electronics" },
-  { vendor: "Gas Station", date: "2024-06-20", amount: 4573.3, category: "Transport" },
-  { vendor: "Book Nook", date: "2024-06-19", amount: 2033.5, category: "Entertainment" },
-]
-
 export default function DashboardPage() {
+  const { receipts } = useReceipts();
+
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  const monthlySpending = receipts
+    .filter(r => {
+        const receiptDate = new Date(r.date);
+        return receiptDate.getMonth() === currentMonth && receiptDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, r) => sum + r.total, 0);
+
+  const categorySpending = receipts
+    .filter(r => {
+        const receiptDate = new Date(r.date);
+        return receiptDate.getMonth() === currentMonth && receiptDate.getFullYear() === currentYear;
+    })
+    .reduce((acc, r) => {
+        if (!acc[r.category]) {
+            acc[r.category] = 0;
+        }
+        acc[r.category] += r.total;
+        return acc;
+    }, {} as Record<string, number>);
+
+  const topCategoryEntry = Object.entries(categorySpending).sort(([, a], [, b]) => b - a)[0];
+  const topCategoryName = topCategoryEntry ? topCategoryEntry[0] : 'None';
+  const topCategoryAmount = topCategoryEntry ? topCategoryEntry[1] : 0;
+
+  const recentTransactions = receipts.slice(0, 5).map(r => ({
+    vendor: r.vendor,
+    date: r.date,
+    amount: r.total,
+    category: r.category,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -54,23 +84,22 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Total Spending (Month)</CardTitle>
-            <CardDescription>Your total expenditure for June.</CardDescription>
+            <CardTitle>Total Spending (This Month)</CardTitle>
+            <CardDescription>Your total expenditure for the current month.</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">₹194,690.61</p>
-            <p className="text-xs text-muted-foreground mt-1">+5.2% from last month</p>
+            <p className="text-4xl font-bold">₹{monthlySpending.toFixed(2)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Top Category</CardTitle>
-            <CardDescription>Your highest spending category in June.</CardDescription>
+            <CardTitle>Top Category (This Month)</CardTitle>
+            <CardDescription>Your highest spending category.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-               <Badge variant="outline" className="text-sm py-1 px-3">Groceries</Badge>
-               <p className="text-3xl font-bold">₹73,879.96</p>
+               <Badge variant="outline" className="text-sm py-1 px-3">{topCategoryName}</Badge>
+               <p className="text-3xl font-bold">₹{topCategoryAmount.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
@@ -138,15 +167,19 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentTransactions.map((tx) => (
-                  <TableRow key={tx.vendor}>
+                {recentTransactions.length > 0 ? recentTransactions.map((tx) => (
+                  <TableRow key={tx.vendor + tx.date}>
                     <TableCell>
                       <div className="font-medium">{tx.vendor}</div>
                       <div className="text-sm text-muted-foreground">{tx.category}</div>
                     </TableCell>
                     <TableCell className="text-right font-medium">₹{tx.amount.toFixed(2)}</TableCell>
                   </TableRow>
-                ))}
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center">No transactions yet.</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
