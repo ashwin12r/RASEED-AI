@@ -41,7 +41,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href} legacyBehavior passHref>
+                <Link href={item.href}>
                   <SidebarMenuButton isActive={pathname === item.href} tooltip={{children: item.label, side:"right"}}>
                     <item.icon />
                     <span>{item.label}</span>
@@ -54,7 +54,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarFooter className="p-2 flex-col gap-2">
            <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/settings" legacyBehavior passHref>
+              <Link href="/settings">
                 <SidebarMenuButton isActive={pathname === "/settings"} tooltip={{children: "Settings", side: "right"}}>
                   <Settings />
                   <span>Settings</span>
