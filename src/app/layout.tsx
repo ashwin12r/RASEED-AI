@@ -6,7 +6,7 @@ import { ReceiptsProvider } from '@/hooks/use-receipts'
 import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
-  title: 'Finance Tracker',
+  title: 'Project Raseed',
   description: 'Manage your receipts and spending with AI.',
 }
 

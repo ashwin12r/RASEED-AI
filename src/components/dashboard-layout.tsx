@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="p-1.5 bg-primary rounded-lg">
                 <Wallet className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-foreground group-data-[collapsible=icon]:hidden">Finance Tracker</span>
+            <span className="text-foreground group-data-[collapsible=icon]:hidden">Project Raseed</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -84,7 +84,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <div className="p-1.5 bg-primary rounded-lg">
                     <Wallet className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <span className="text-foreground">Finance Tracker</span>
+                <span className="text-foreground">Project Raseed</span>
             </Link>
           <SidebarTrigger />
         </header>
