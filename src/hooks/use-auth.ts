@@ -24,6 +24,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // If firebase is not configured, auth will be null.
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     // This listener handles user session state across page loads.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -34,6 +39,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signInWithGoogle = async () => {
+    if (!auth || !googleProvider) {
+      toast({
+          title: "Configuration Error",
+          description: "Firebase is not configured. Please add your credentials.",
+          variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -57,6 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    if (!auth) return; // Don't do anything if not configured.
+
     setLoading(true);
     try {
       await firebaseSignOut(auth);
