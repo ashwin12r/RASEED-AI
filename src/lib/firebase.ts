@@ -1,4 +1,3 @@
-
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
@@ -16,14 +15,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-// For debugging purposes:
-console.log("Using Firebase Config:", firebaseConfig);
+export const isFirebaseConfigured = !!(firebaseConfig.apiKey && firebaseConfig.projectId);
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+const app = isFirebaseConfigured ? (!getApps().length ? initializeApp(firebaseConfig) : getApp()) : null;
+const auth = app ? getAuth(app) : null;
+const db = app ? getFirestore(app) : null;
+const googleProvider = app ? new GoogleAuthProvider() : null;
 
+if (!isFirebaseConfigured) {
+  console.error(
+    "Missing Firebase configuration. Please set up your .env file with the necessary Firebase project credentials. You can find these in your Firebase project settings."
+  );
+}
 
 export { app, auth, db, googleProvider };

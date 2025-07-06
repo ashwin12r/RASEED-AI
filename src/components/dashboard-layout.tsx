@@ -20,6 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
 import React from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
+import { isFirebaseConfigured } from "@/lib/firebase"
+import { FirebaseConfigError } from "./firebase-config-error"
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -33,6 +35,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, loading, signOut } = useAuth()
+  
+  if (!isFirebaseConfigured) {
+    return <FirebaseConfigError />
+  }
 
   React.useEffect(() => {
     if (!loading && !user && pathname !== '/login') {

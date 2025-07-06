@@ -65,9 +65,10 @@ const generateShoppingListPassFlow = ai.defineFlow(
     const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-    if (!issuerId || !serviceAccountEmail || !serviceAccountKey) {
-        throw new Error("Google Wallet credentials are not configured in .env file.");
+    if (!issuerId || !serviceAccountEmail || !serviceAccountKey || !appUrl) {
+        throw new Error("Google Wallet credentials or App URL are not configured in .env file.");
     }
     
     // 3. Construct the Google Wallet Pass Object
@@ -116,7 +117,7 @@ const generateShoppingListPassFlow = ai.defineFlow(
         iss: serviceAccountEmail,
         aud: 'google',
         typ: 'savetowallet',
-        origins: [],
+        origins: [appUrl],
         payload: {
             genericObjects: [passObject]
         }
