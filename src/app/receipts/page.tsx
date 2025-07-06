@@ -18,9 +18,10 @@ import { textToSpeech } from "@/ai/flows/text-to-speech"
 import { generateWalletPass } from "@/ai/flows/generate-wallet-pass"
 import { useToast } from "@/hooks/use-toast"
 import { useReceipts, Receipt } from "@/hooks/use-receipts"
+import { extractItemsFromReceipt } from "@/ai/flows/extract-items-from-receipt"
 
 export default function ReceiptsPage() {
-  const { receipts, deleteReceipt, isLoading } = useReceipts()
+  const { receipts, deleteReceipt, updateReceipt, isLoading } = useReceipts()
   const [isReading, setIsReading] = React.useState<string | null>(null)
   const [isWalletLoading, setIsWalletLoading] = React.useState<string | null>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -70,17 +71,41 @@ export default function ReceiptsPage() {
   }
 
   const handleAddToWallet = async (receipt: Receipt) => {
-    if (!Array.isArray(receipt.items)) {
-      toast({
-        title: "Invalid Receipt Data",
-        description: "Cannot add to wallet. The items for this receipt are not formatted correctly. Please try deleting and re-adding it.",
-        variant: "destructive",
-      });
-      return;
-    }
     setIsWalletLoading(receipt.id);
+    let receiptToAdd = { ...receipt }; // Work with a mutable copy
+
     try {
-      const { jwt } = await generateWalletPass(receipt);
+      // Check if items are malformed
+      if (!Array.isArray(receiptToAdd.items)) {
+        toast({
+          title: "Fixing Receipt Data",
+          description: "Item list is incomplete. Automatically fetching details...",
+        });
+        
+        // Call the new flow to get the correct item list
+        const result = await extractItemsFromReceipt({ receiptDataUri: receiptToAdd.receiptDataUri });
+        
+        if (result.items && result.items.length > 0) {
+          // Update the receipt object and save the correction to the database
+          receiptToAdd.items = result.items;
+          await updateReceipt(receiptToAdd.id, { items: result.items });
+          toast({
+            title: "Data Fixed",
+            description: "Successfully updated the item list.",
+          });
+        } else {
+          // If the fix fails, fallback to an empty list to prevent a crash
+          receiptToAdd.items = [];
+          toast({
+            title: "Could Not Fix Data",
+            description: "Unable to extract items. Proceeding with an empty list.",
+            variant: "destructive"
+          });
+        }
+      }
+
+      // Proceed with generating the wallet pass using the (potentially corrected) receipt
+      const { jwt } = await generateWalletPass(receiptToAdd);
       window.open(`https://pay.google.com/gp/v/save/${jwt}`, '_blank');
       toast({
         title: "Redirecting to Google Wallet",

@@ -39,13 +39,14 @@ const categorizeReceiptPrompt = ai.definePrompt({
   name: 'categorizeReceiptPrompt',
   input: {schema: CategorizeReceiptInputSchema},
   output: {schema: CategorizeReceiptOutputSchema},
-  prompt: `You are an expert financial assistant.  Your job is to categorize receipts.
+  prompt: `You are an expert financial assistant. Your job is to categorize receipts.
 
   Analyze the following receipt image and categorize it based on the vendor and items.
 
   Receipt Image: {{media url=receiptDataUri}}
   
-  Based on this information, extract the vendor, categorize the receipt, list all items purchased as an array of strings, and identify the total amount spent.
+  Based on this information, extract the vendor, categorize the receipt, list all items purchased, and identify the total amount spent.
+  The 'items' property in your output MUST be an array of strings. If you cannot identify any items, return an empty array for the 'items' property.
   Return the output in JSON format. Do not include any other prose.
 `,
 });

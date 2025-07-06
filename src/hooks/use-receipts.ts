@@ -4,7 +4,7 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useAuth } from './use-auth';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc } from 'firebase/firestore';
 
 export interface Receipt {
   id: string;
@@ -19,6 +19,7 @@ export interface Receipt {
 interface ReceiptsContextType {
   receipts: Receipt[];
   addReceipt: (newReceiptData: { vendor: string; category: string; totalAmount: number; items: string[], receiptDataUri: string }) => Promise<void>;
+  updateReceipt: (id: string, updatedData: Partial<Receipt>) => Promise<void>;
   deleteReceipt: (id: string) => Promise<void>;
   isLoading: boolean;
 }
@@ -78,6 +79,22 @@ export const ReceiptsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateReceipt = async (id: string, updatedData: Partial<Receipt>) => {
+    if (!user) {
+      console.error("No user logged in to update receipt.");
+      return;
+    }
+    try {
+      const receiptDoc = doc(db, 'users', user.uid, 'receipts', id);
+      await updateDoc(receiptDoc, updatedData);
+      setReceipts(prevReceipts => 
+        prevReceipts.map(r => r.id === id ? { ...r, ...updatedData } : r)
+      );
+    } catch (error) {
+      console.error("Error updating document:", error);
+    }
+  };
+
   const deleteReceipt = async (id: string) => {
     if (!user) {
       console.error("No user logged in to delete receipt.");
@@ -91,7 +108,7 @@ export const ReceiptsProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const value = { receipts, addReceipt, deleteReceipt, isLoading };
+  const value = { receipts, addReceipt, updateReceipt, deleteReceipt, isLoading };
 
   return React.createElement(ReceiptsContext.Provider, { value: value }, children);
 };
