@@ -23,10 +23,4 @@ const auth = app ? getAuth(app) : null;
 const db = app ? getFirestore(app) : null;
 const googleProvider = app ? new GoogleAuthProvider() : null;
 
-if (!isFirebaseConfigured) {
-  console.error(
-    "Missing Firebase configuration. Please set up your .env file with the necessary Firebase project credentials. You can find these in your Firebase project settings."
-  );
-}
-
 export { app, auth, db, googleProvider };
