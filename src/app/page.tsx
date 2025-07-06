@@ -14,12 +14,12 @@ import { AddReceiptDialog } from "@/components/add-receipt-dialog"
 import { Progress } from "@/components/ui/progress"
 
 const chartData = [
-  { month: "January", total: 2450 },
-  { month: "February", total: 2134 },
-  { month: "March", total: 2890 },
-  { month: "April", total: 2543 },
-  { month: "May", total: 3120 },
-  { month: "June", total: 2345 },
+  { month: "January", total: 203350 },
+  { month: "February", total: 177122 },
+  { month: "March", total: 239870 },
+  { month: "April", total: 211069 },
+  { month: "May", total: 258960 },
+  { month: "June", total: 194635 },
 ];
 
 const chartConfig = {
@@ -30,11 +30,11 @@ const chartConfig = {
 }
 
 const recentTransactions = [
-  { vendor: "Grocery Mart", date: "2024-06-23", amount: 75.42, category: "Groceries" },
-  { vendor: "The Coffee House", date: "2024-06-22", amount: 12.80, category: "Dining" },
-  { vendor: "Tech Store", date: "2024-06-21", amount: 499.99, category: "Electronics" },
-  { vendor: "Gas Station", date: "2024-06-20", amount: 55.10, category: "Transport" },
-  { vendor: "Book Nook", date: "2024-06-19", amount: 24.50, category: "Entertainment" },
+  { vendor: "Grocery Mart", date: "2024-06-23", amount: 6259.86, category: "Groceries" },
+  { vendor: "The Coffee House", date: "2024-06-22", amount: 1062.4, category: "Dining" },
+  { vendor: "Tech Store", date: "2024-06-21", amount: 41499.17, category: "Electronics" },
+  { vendor: "Gas Station", date: "2024-06-20", amount: 4573.3, category: "Transport" },
+  { vendor: "Book Nook", date: "2024-06-19", amount: 2033.5, category: "Entertainment" },
 ]
 
 export default function DashboardPage() {
@@ -58,7 +58,7 @@ export default function DashboardPage() {
             <CardDescription>Your total expenditure for June.</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">$2,345.67</p>
+            <p className="text-4xl font-bold">₹194,690.61</p>
             <p className="text-xs text-muted-foreground mt-1">+5.2% from last month</p>
           </CardContent>
         </Card>
@@ -70,7 +70,7 @@ export default function DashboardPage() {
           <CardContent>
             <div className="flex items-center gap-4">
                <Badge variant="outline" className="text-sm py-1 px-3">Groceries</Badge>
-               <p className="text-3xl font-bold">$890.12</p>
+               <p className="text-3xl font-bold">₹73,879.96</p>
             </div>
           </CardContent>
         </Card>
@@ -81,7 +81,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex items-center justify-between">
-                <p className="text-2xl font-bold">$450 / $500</p>
+                <p className="text-2xl font-bold">₹37,350 / ₹41,500</p>
                 <p className="text-lg font-medium">90%</p>
             </div>
             <Progress value={90} aria-label="Savings goal progress" />
@@ -113,7 +113,7 @@ export default function DashboardPage() {
                     tickMargin={10}
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
-                    tickFormatter={(value) => `$${value}`}
+                    tickFormatter={(value) => `₹${value}`}
                 />
                 <ChartTooltip
                   cursor={false}
@@ -144,7 +144,7 @@ export default function DashboardPage() {
                       <div className="font-medium">{tx.vendor}</div>
                       <div className="text-sm text-muted-foreground">{tx.category}</div>
                     </TableCell>
-                    <TableCell className="text-right font-medium">${tx.amount.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">₹{tx.amount.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { DashboardLayout } from '@/components/dashboard-layout'
 
 export const metadata: Metadata = {
-  title: 'Project Raseed',
+  title: 'Finance Tracker',
   description: 'Manage your receipts and spending with AI.',
 }
 

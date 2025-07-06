@@ -55,7 +55,7 @@ export default function AnalysisPage() {
       } else {
         botResponse = {
           id: Date.now() + 1,
-          text: "Based on your receipts, you spent $128.50 on dining last week. This is up 15% from the previous week. Consider cooking at home more often to save money.",
+          text: "Based on your receipts, you spent ₹10,665.50 on dining last week. This is up 15% from the previous week. Consider cooking at home more often to save money.",
           sender: 'bot'
         }
       }

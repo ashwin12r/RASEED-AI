@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { DollarSign, LayoutDashboard, ReceiptText, LineChart, Settings } from "lucide-react"
+import { Wallet, LayoutDashboard, ReceiptText, LineChart, Settings } from "lucide-react"
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -32,9 +32,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="p-4">
           <Link href="/" className="flex items-center gap-2.5 font-bold text-lg group-data-[collapsible=icon]:justify-center">
             <div className="p-1.5 bg-primary rounded-lg">
-                <DollarSign className="w-5 h-5 text-primary-foreground" />
+                <Wallet className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-foreground group-data-[collapsible=icon]:hidden">Raseed</span>
+            <span className="text-foreground group-data-[collapsible=icon]:hidden">Finance Tracker</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -80,9 +80,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 md:hidden flex items-center justify-between p-2 border-b bg-background/80 backdrop-blur-sm">
             <Link href="/" className="flex items-center gap-2 font-bold text-lg">
                 <div className="p-1.5 bg-primary rounded-lg">
-                    <DollarSign className="w-5 h-5 text-primary-foreground" />
+                    <Wallet className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <span className="text-foreground">Raseed</span>
+                <span className="text-foreground">Finance Tracker</span>
             </Link>
           <SidebarTrigger />
         </header>
