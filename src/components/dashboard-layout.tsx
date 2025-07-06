@@ -14,7 +14,8 @@ import {
   SidebarMenuButton, 
   SidebarFooter, 
   SidebarTrigger, 
-  SidebarInset 
+  SidebarInset,
+  useSidebar
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/hooks/use-auth"
@@ -31,43 +32,25 @@ const navItems = [
   { href: "/reminders", label: "Reminders", icon: BellRing },
 ]
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const { user, loading, signOut } = useAuth()
-  
-  if (!isFirebaseConfigured) {
-    return <FirebaseConfigError />
-  }
+function AppLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, signOut } = useAuth();
+  const { toggleSidebar, state: sidebarState } = useSidebar();
 
-  React.useEffect(() => {
-    if (!loading && !user && pathname !== '/login') {
-      router.push('/login')
+  const handleHeaderClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // On desktop, if the sidebar is collapsed, clicking the logo should expand it
+    // instead of navigating. If it's already open, it will navigate to home as a normal link.
+    if (sidebarState === 'collapsed') {
+      e.preventDefault();
+      toggleSidebar();
     }
-  }, [user, loading, pathname, router])
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user && pathname !== '/login') {
-      // Still loading or redirecting
-      return null;
-  }
-  
-  if (!user && pathname === '/login') {
-    return <>{children}</>
-  }
+  };
 
   return (
-    <SidebarProvider>
+    <>
       <Sidebar>
         <SidebarHeader className="p-4">
-          <Link href="/" className="flex items-center gap-2.5 font-bold text-lg group-data-[collapsible=icon]:justify-center">
+          <Link href="/" onClick={handleHeaderClick} className="flex items-center gap-2.5 font-bold text-lg group-data-[collapsible=icon]:justify-center">
             <div className="p-1.5 bg-primary rounded-lg">
                 <Wallet className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -137,6 +120,44 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </SidebarInset>
+    </>
+  );
+}
+
+export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { user, loading } = useAuth()
+  
+  if (!isFirebaseConfigured) {
+    return <FirebaseConfigError />
+  }
+
+  React.useEffect(() => {
+    if (!loading && !user && pathname !== '/login') {
+      router.push('/login')
+    }
+  }, [user, loading, pathname, router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user && pathname === '/login') {
+    return <>{children}</>
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <SidebarProvider>
+      <AppLayout>{children}</AppLayout>
     </SidebarProvider>
   )
 }
