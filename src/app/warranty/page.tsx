@@ -21,19 +21,21 @@ interface WarrantyItem {
 
 export default function WarrantyPage() {
     const [warranties, setWarranties] = useState<WarrantyItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const { receipts } = useReceipts();
+    const [isScanning, setIsScanning] = useState(true);
+    const { receipts, isLoading: isReceiptsLoading } = useReceipts();
     const { toast } = useToast();
 
     useEffect(() => {
+        if (isReceiptsLoading) return;
+
         const fetchWarranties = async () => {
             if (receipts.length === 0) {
-                setIsLoading(false);
+                setIsScanning(false);
                 setWarranties([]);
                 return;
             }
 
-            setIsLoading(true);
+            setIsScanning(true);
             try {
                 const allWarrantiesPromises = receipts.map(receipt =>
                     trackWarranty({ receiptDataUri: receipt.receiptDataUri })
@@ -82,14 +84,12 @@ export default function WarrantyPage() {
                     variant: "destructive",
                 });
             } finally {
-                setIsLoading(false);
+                setIsScanning(false);
             }
         };
 
-        if (receipts.length > 0 || localStorage.getItem('receipts') === null) {
-          fetchWarranties();
-        }
-    }, [receipts, toast]);
+        fetchWarranties();
+    }, [receipts, isReceiptsLoading, toast]);
 
 
   const getStatusVariant = (status: string) => {
@@ -130,12 +130,12 @@ export default function WarrantyPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isScanning ? (
                   <TableRow>
                       <TableCell colSpan={4} className="h-24 text-center">
-                          <div className="flex flex-col items-center gap-2">
+                          <div className="flex flex-col items-center justify-center gap-2">
                             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                            <span>Scanning receipts for warranties...</span>
+                            <span>{isReceiptsLoading ? 'Loading receipts...' : 'Scanning receipts for warranties...'}</span>
                           </div>
                       </TableCell>
                   </TableRow>

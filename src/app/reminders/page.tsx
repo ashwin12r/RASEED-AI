@@ -20,19 +20,21 @@ interface ReminderItem {
 
 export default function RemindersPage() {
     const [reminders, setReminders] = useState<ReminderItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const { receipts } = useReceipts();
+    const [isScanning, setIsScanning] = useState(true);
+    const { receipts, isLoading: isReceiptsLoading } = useReceipts();
     const { toast } = useToast();
 
     useEffect(() => {
+        if (isReceiptsLoading) return;
+
         const fetchReminders = async () => {
             if (receipts.length === 0) {
-                setIsLoading(false);
+                setIsScanning(false);
                 setReminders([]);
                 return;
             }
 
-            setIsLoading(true);
+            setIsScanning(true);
             try {
                 const allRemindersPromises = receipts.map(receipt => 
                     setReturnReminder({ receiptDataUri: receipt.receiptDataUri })
@@ -75,15 +77,12 @@ export default function RemindersPage() {
                     variant: "destructive",
                 });
             } finally {
-                setIsLoading(false);
+                setIsScanning(false);
             }
         };
 
-        // This check is to avoid running on initial empty receipts from SSR
-        if (receipts.length > 0 || localStorage.getItem('receipts') === null) {
-          fetchReminders();
-        }
-    }, [receipts, toast]);
+        fetchReminders();
+    }, [receipts, isReceiptsLoading, toast]);
 
 
   return (
@@ -120,12 +119,12 @@ export default function RemindersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
+              {isScanning ? (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    <div className="flex flex-col items-center gap-2">
+                    <div className="flex flex-col items-center justify-center gap-2">
                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        <span>Scanning receipts for reminders...</span>
+                        <span>{isReceiptsLoading ? 'Loading receipts...' : 'Scanning receipts for reminders...'}</span>
                     </div>
                   </TableCell>
                 </TableRow>

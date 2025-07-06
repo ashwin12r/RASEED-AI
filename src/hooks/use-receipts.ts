@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 
 export interface Receipt {
   id: string;
@@ -13,47 +13,50 @@ export interface Receipt {
   receiptDataUri: string;
 }
 
+interface ReceiptsContextType {
+  receipts: Receipt[];
+  addReceipt: (newReceiptData: { vendor: string; category: string; totalAmount: number; items: string[], receiptDataUri: string }) => void;
+  deleteReceipt: (id: string) => void;
+  isLoading: boolean;
+}
+
+const ReceiptsContext = createContext<ReceiptsContextType | undefined>(undefined);
+
 const isBrowser = typeof window !== 'undefined';
 
-const defaultReceipts: Receipt[] = [];
-
-
-export function useReceipts() {
+export const ReceiptsProvider = ({ children }: { children: ReactNode }) => {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Load receipts from localStorage on initial mount
   useEffect(() => {
     if (!isBrowser) return;
     try {
       const item = window.localStorage.getItem('receipts');
       if (item) {
         setReceipts(JSON.parse(item));
-      } else {
-        setReceipts(defaultReceipts);
       }
     } catch (error) {
-      console.error(error);
-      setReceipts(defaultReceipts);
+      console.error("Failed to parse receipts from localStorage", error);
     }
+    setIsLoading(false);
   }, []);
 
+  // Save receipts to localStorage whenever they change
   useEffect(() => {
-    if (!isBrowser) return;
+    if (!isBrowser || isLoading) return;
     try {
-        if (receipts.length === 0 && window.localStorage.getItem('receipts')) {
-             window.localStorage.removeItem('receipts');
-        } else if (receipts.length > 0) {
-            window.localStorage.setItem('receipts', JSON.stringify(receipts));
-        }
+        window.localStorage.setItem('receipts', JSON.stringify(receipts));
     } catch (error) {
-      console.error(error);
+      console.error("Failed to save receipts to localStorage", error);
     }
-  }, [receipts]);
+  }, [receipts, isLoading]);
 
   const addReceipt = (newReceiptData: { vendor: string; category: string; totalAmount: number; items: string[], receiptDataUri: string }) => {
     const newReceipt: Receipt = {
       id: `R${Date.now()}`,
       vendor: newReceiptData.vendor,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString(),
       total: newReceiptData.totalAmount,
       category: newReceiptData.category,
       items: newReceiptData.items.length,
@@ -63,14 +66,18 @@ export function useReceipts() {
   };
 
   const deleteReceipt = (id: string) => {
-    setReceipts(prevReceipts => {
-        const updatedReceipts = prevReceipts.filter(receipt => receipt.id !== id);
-        if (updatedReceipts.length === 0) {
-            window.localStorage.removeItem('receipts');
-        }
-        return updatedReceipts;
-    });
+    setReceipts(prevReceipts => prevReceipts.filter(receipt => receipt.id !== id));
   };
+  
+  const value = { receipts, addReceipt, deleteReceipt, isLoading };
 
-  return { receipts, addReceipt, deleteReceipt };
-}
+  return React.createElement(ReceiptsContext.Provider, { value: value }, children);
+};
+
+export const useReceipts = () => {
+  const context = useContext(ReceiptsContext);
+  if (context === undefined) {
+    throw new Error('useReceipts must be used within a ReceiptsProvider');
+  }
+  return context;
+};

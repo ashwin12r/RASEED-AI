@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Wallet, Trash2, PlusCircle, Volume2 } from "lucide-react"
+import { MoreHorizontal, Wallet, Trash2, PlusCircle, Volume2, Loader2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,10 +19,14 @@ import { useToast } from "@/hooks/use-toast"
 import { useReceipts, Receipt } from "@/hooks/use-receipts"
 
 export default function ReceiptsPage() {
-  const { receipts, deleteReceipt } = useReceipts()
+  const { receipts, deleteReceipt, isLoading } = useReceipts()
   const [isReading, setIsReading] = React.useState<string | null>(null)
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+
+  const sortedReceipts = React.useMemo(() => {
+    return [...receipts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [receipts]);
 
   const handleReadAloud = async (receipt: Receipt) => {
     if (isReading === receipt.id) {
@@ -89,11 +93,20 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {receipts.length > 0 ? receipts.map((receipt) => (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="h-24 text-center">
+                    <div className="flex justify-center items-center gap-2">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <span>Loading receipts...</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : sortedReceipts.length > 0 ? sortedReceipts.map((receipt) => (
                 <TableRow key={receipt.id}>
                   <TableCell className="font-medium">{receipt.vendor}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{receipt.category}</Badge>
+                    <Badge variant="outline" className="capitalize">{receipt.category}</Badge>
                   </TableCell>
                   <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
                   <TableCell>{receipt.items}</TableCell>
