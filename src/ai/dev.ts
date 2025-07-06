@@ -10,3 +10,4 @@ import '@/ai/flows/savings-suggestions.ts';
 import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/warranty-tracker.ts';
 import '@/ai/flows/return-reminder.ts';
+import '@/ai/flows/generate-wallet-pass.ts';

@@ -17,7 +17,9 @@ interface Message {
   id: number;
   text: React.ReactNode;
   sender: 'user' | 'bot';
-  passDetails?: string;
+  walletJwt?: string;
+  shoppingListItems?: string[];
+  shoppingListStore?: string;
 }
 
 export default function AnalysisPage() {
@@ -60,7 +62,9 @@ export default function AnalysisPage() {
             id: Date.now() + 1,
             text: "Here is the shopping list you requested. You can add it to your Google Wallet.",
             sender: 'bot',
-            passDetails: result.passDetails,
+            walletJwt: result.jwt,
+            shoppingListItems: result.items,
+            shoppingListStore: result.store
           };
         } else {
           if (receipts.length === 0) {
@@ -119,19 +123,21 @@ export default function AnalysisPage() {
                   message.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card'
                 )}>
                   <div className="text-sm prose dark:prose-invert prose-p:my-0">{message.text}</div>
-                  {message.passDetails && (
+                  {message.walletJwt && message.shoppingListItems && (
                     <Card className="mt-4 bg-background">
                       <CardHeader>
-                        <CardTitle className="text-base">Shopping List</CardTitle>
+                        <CardTitle className="text-base">Shopping List for {message.shoppingListStore}</CardTitle>
                         <CardDescription>Generated for you</CardDescription>
                       </CardHeader>
                       <CardContent>
                         <ul className="list-disc list-inside text-sm text-muted-foreground">
-                            {message.passDetails.split(',').map(item => item.trim()).filter(Boolean).map(item => <li key={item}>{item}</li>)}
+                            {message.shoppingListItems.map(item => <li key={item}>{item}</li>)}
                         </ul>
-                        <Button variant="outline" className="w-full mt-4">
-                            <Wallet className="mr-2 h-4 w-4" />
-                            Add to Google Wallet
+                        <Button asChild variant="outline" className="w-full mt-4">
+                            <a href={`https://pay.google.com/gp/v/save/${message.walletJwt}`} target="_blank" rel="noopener noreferrer">
+                                <Wallet className="mr-2 h-4 w-4" />
+                                Add to Google Wallet
+                            </a>
                         </Button>
                       </CardContent>
                     </Card>

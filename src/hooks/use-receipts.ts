@@ -12,7 +12,7 @@ export interface Receipt {
   date: string;
   total: number;
   category: string;
-  items: number;
+  items: string[];
   receiptDataUri: string;
 }
 
@@ -65,14 +65,14 @@ export const ReceiptsProvider = ({ children }: { children: ReactNode }) => {
       date: new Date().toISOString(),
       total: newReceiptData.totalAmount,
       category: newReceiptData.category,
-      items: newReceiptData.items.length,
+      items: newReceiptData.items,
       receiptDataUri: newReceiptData.receiptDataUri,
     };
 
     try {
       const receiptsCol = collection(db, 'users', user.uid, 'receipts');
       const docRef = await addDoc(receiptsCol, receiptToAdd);
-      setReceipts(prevReceipts => [{ id: docRef.id, ...receiptToAdd }, ...prevReceipts]);
+      setReceipts(prevReceipts => [{ id: docRef.id, ...receiptToAdd, date: receiptToAdd.date }, ...prevReceipts] as Receipt[]);
     } catch (error) {
       console.error("Error adding document: ", error);
     }

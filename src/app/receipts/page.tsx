@@ -15,12 +15,14 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { AddReceiptDialog } from "@/components/add-receipt-dialog"
 import { textToSpeech } from "@/ai/flows/text-to-speech"
+import { generateWalletPass } from "@/ai/flows/generate-wallet-pass"
 import { useToast } from "@/hooks/use-toast"
 import { useReceipts, Receipt } from "@/hooks/use-receipts"
 
 export default function ReceiptsPage() {
   const { receipts, deleteReceipt, isLoading } = useReceipts()
   const [isReading, setIsReading] = React.useState<string | null>(null)
+  const [isWalletLoading, setIsWalletLoading] = React.useState<string | null>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
@@ -39,7 +41,7 @@ export default function ReceiptsPage() {
     };
     setIsReading(receipt.id);
     try {
-      const textToRead = `Receipt from ${receipt.vendor} on ${new Date(receipt.date).toLocaleDateString()}. Total amount is ${receipt.total.toFixed(2)} rupees. The category is ${receipt.category}. It contains ${receipt.items} items.`;
+      const textToRead = `Receipt from ${receipt.vendor} on ${new Date(receipt.date).toLocaleDateString()}. Total amount is ${receipt.total.toFixed(2)} rupees. The category is ${receipt.category}. It contains ${receipt.items.length} items.`;
       const response = await textToSpeech(textToRead);
       if (response.media && audioRef.current) {
         audioRef.current.src = response.media;
@@ -65,6 +67,27 @@ export default function ReceiptsPage() {
         title: "Receipt Deleted",
         description: "The receipt has been removed.",
     });
+  }
+
+  const handleAddToWallet = async (receipt: Receipt) => {
+    setIsWalletLoading(receipt.id);
+    try {
+      const { jwt } = await generateWalletPass(receipt);
+      window.open(`https://pay.google.com/gp/v/save/${jwt}`, '_blank');
+      toast({
+        title: "Redirecting to Google Wallet",
+        description: "Please follow the instructions in the new tab to save your pass.",
+      });
+    } catch(error) {
+      console.error("Failed to generate wallet pass:", error);
+      toast({
+        title: "Error",
+        description: "Could not generate Google Wallet pass. Please ensure your credentials are set up correctly.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsWalletLoading(null);
+    }
   }
 
   return (
@@ -109,13 +132,13 @@ export default function ReceiptsPage() {
                     <Badge variant="outline" className="capitalize">{receipt.category}</Badge>
                   </TableCell>
                   <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{receipt.items}</TableCell>
+                  <TableCell>{receipt.items.length}</TableCell>
                   <TableCell className="text-right font-medium">₹{receipt.total.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
+                           {isWalletLoading === receipt.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                           <span className="sr-only">Toggle menu</span>
                         </Button>
                       </DropdownMenuTrigger>
@@ -125,7 +148,7 @@ export default function ReceiptsPage() {
                             <Volume2 className="mr-2 h-4 w-4" />
                             {isReading === receipt.id ? 'Stop' : 'Read Aloud'}
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAddToWallet(receipt)} disabled={isWalletLoading !== null}>
                           <Wallet className="mr-2 h-4 w-4" />
                           Add to Wallet
                         </DropdownMenuItem>
