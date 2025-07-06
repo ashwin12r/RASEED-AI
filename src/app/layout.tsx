@@ -3,6 +3,7 @@ import './globals.css'
 import { Toaster } from "@/components/ui/toaster"
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ReceiptsProvider } from '@/hooks/use-receipts'
+import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
   title: 'Finance Tracker',
@@ -22,11 +23,18 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ReceiptsProvider>
-          <DashboardLayout>
-            {children}
-          </DashboardLayout>
-        </ReceiptsProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <ReceiptsProvider>
+            <DashboardLayout>
+              {children}
+            </DashboardLayout>
+          </ReceiptsProvider>
+        </ThemeProvider>
         <Toaster />
       </body>
     </html>

@@ -5,8 +5,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { useTheme } from "next-themes"
+import { useEffect, useState } from "react"
 
 export default function SettingsPage() {
+  const { theme, setTheme, resolvedTheme } = useTheme()
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  const handleThemeChange = (checked: boolean) => {
+    setTheme(checked ? 'dark' : 'light')
+  }
+
+  if (!isMounted) {
+    return null
+  }
+
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
       <div>
@@ -72,11 +89,13 @@ export default function SettingsPage() {
         <CardContent>
           <div className="flex items-center justify-between">
             <Label htmlFor="dark-mode" className="font-medium">Dark Mode</Label>
-            <Switch id="dark-mode" aria-label="Toggle dark mode"/>
+            <Switch 
+              id="dark-mode" 
+              aria-label="Toggle dark mode"
+              checked={resolvedTheme === 'dark'}
+              onCheckedChange={handleThemeChange}
+            />
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            Theme switching is not yet implemented.
-          </p>
         </CardContent>
       </Card>
     </div>
