@@ -1,3 +1,4 @@
+
 'use client'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -7,10 +8,13 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
+import { useAuth } from "@/hooks/use-auth"
+import { LogOut } from "lucide-react"
 
 export default function SettingsPage() {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [isMounted, setIsMounted] = useState(false)
+  const { user, signOut } = useAuth()
 
   useEffect(() => {
     setIsMounted(true)
@@ -34,18 +38,17 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>
-          <CardDescription>Update your personal information.</CardDescription>
+          <CardDescription>This is your personal information.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
-            <Input id="name" defaultValue="User Name" />
+            <Input id="name" defaultValue={user?.displayName || ""} readOnly />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue="user@example.com" />
+            <Input id="email" type="email" defaultValue={user?.email || ""} readOnly />
           </div>
-          <Button>Save Changes</Button>
         </CardContent>
       </Card>
       
@@ -96,6 +99,19 @@ export default function SettingsPage() {
               onCheckedChange={handleThemeChange}
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Account</CardTitle>
+          <CardDescription>Manage your account settings.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={signOut}>
+            <LogOut className="mr-2 h-4 w-4"/>
+            Sign Out
+          </Button>
         </CardContent>
       </Card>
     </div>

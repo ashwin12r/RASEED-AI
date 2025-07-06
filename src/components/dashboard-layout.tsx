@@ -1,8 +1,9 @@
+
 'use client'
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Wallet, LayoutDashboard, ReceiptText, LineChart, Settings, ShieldCheck, BellRing } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Wallet, LayoutDashboard, ReceiptText, LineChart, Settings, ShieldCheck, BellRing, LogOut, Loader2 } from "lucide-react"
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -16,6 +17,9 @@ import {
   SidebarInset 
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/hooks/use-auth"
+import React from "react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -27,6 +31,31 @@ const navItems = [
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { user, loading, signOut } = useAuth()
+
+  React.useEffect(() => {
+    if (!loading && !user && pathname !== '/login') {
+      router.push('/login')
+    }
+  }, [user, loading, pathname, router])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user && pathname !== '/login') {
+      // Still loading or redirecting
+      return null;
+  }
+  
+  if (!user && pathname === '/login') {
+    return <>{children}</>
+  }
 
   return (
     <SidebarProvider>
@@ -64,16 +93,26 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: "User Profile", side: "right"}}>
-                    <Avatar className="size-7">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="person portrait" />
-                        <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-sm">User Name</span>
-                        <span className="text-xs text-muted-foreground">user@example.com</span>
-                    </div>
-                </SidebarMenuButton>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                         <SidebarMenuButton tooltip={{children: "User Profile", side: "right"}}>
+                            <Avatar className="size-7">
+                                <AvatarImage src={user?.photoURL || "https://placehold.co/40x40.png"} alt={user?.displayName || "User"} data-ai-hint="person portrait" />
+                                <AvatarFallback>{user?.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col text-left">
+                                <span className="font-semibold text-sm">{user?.displayName}</span>
+                                <span className="text-xs text-muted-foreground">{user?.email}</span>
+                            </div>
+                        </SidebarMenuButton>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="right" align="start">
+                        <DropdownMenuItem onClick={signOut}>
+                            <LogOut className="mr-2"/>
+                            Sign Out
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </SidebarMenuItem>
            </SidebarMenu>
         </SidebarFooter>

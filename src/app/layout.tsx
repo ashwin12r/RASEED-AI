@@ -1,9 +1,11 @@
+
 import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from "@/components/ui/toaster"
 import { DashboardLayout } from '@/components/dashboard-layout'
 import { ReceiptsProvider } from '@/hooks/use-receipts'
 import { ThemeProvider } from '@/components/theme-provider'
+import { AuthProvider } from '@/hooks/use-auth'
 
 export const metadata: Metadata = {
   title: 'Project Raseed',
@@ -29,11 +31,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ReceiptsProvider>
-            <DashboardLayout>
-              {children}
-            </DashboardLayout>
-          </ReceiptsProvider>
+          <AuthProvider>
+            <ReceiptsProvider>
+              <DashboardLayout>
+                {children}
+              </DashboardLayout>
+            </ReceiptsProvider>
+          </AuthProvider>
         </ThemeProvider>
         <Toaster />
       </body>
