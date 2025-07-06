@@ -13,17 +13,11 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Upload, Sparkles, AlertTriangle, Check } from "lucide-react"
+import { Loader2, Upload, Sparkles, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { categorizeReceipt, CategorizeReceiptOutput } from "@/ai/flows/dynamic-categorization"
-import { detectFraud, FraudDetectionOutput } from "@/ai/flows/fraud-detection"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useReceipts } from "@/hooks/use-receipts"
-
-type AnalysisResult = {
-    category: CategorizeReceiptOutput,
-    fraud: FraudDetectionOutput
-}
 
 export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -31,7 +25,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [receiptDataUri, setReceiptDataUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<CategorizeReceiptOutput | null>(null);
   const { toast } = useToast();
   const { addReceipt } = useReceipts();
 
@@ -67,13 +61,8 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
     setAnalysisResult(null);
 
     try {
-        // Run analyses in parallel
-        const [categoryResult, fraudResult] = await Promise.all([
-            categorizeReceipt({ receiptDataUri }),
-            detectFraud({ receiptDataUri })
-        ]);
-
-        setAnalysisResult({ category: categoryResult, fraud: fraudResult });
+        const categoryResult = await categorizeReceipt({ receiptDataUri });
+        setAnalysisResult(categoryResult);
         
         toast({
             title: "Analysis Complete",
@@ -110,16 +99,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
         return;
     }
 
-    if (analysisResult.fraud.isFraudulent && analysisResult.fraud.confidenceScore > 0.75) {
-        toast({
-            title: "Fraudulent Receipt",
-            description: "Cannot save a receipt that is flagged as potentially fraudulent.",
-            variant: "destructive"
-        });
-        return;
-    }
-
-    addReceipt({ ...analysisResult.category, receiptDataUri });
+    addReceipt({ ...analysisResult, receiptDataUri });
     
     toast({
         title: "Receipt Saved",
@@ -141,7 +121,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
         <DialogHeader>
           <DialogTitle>Add New Receipt</DialogTitle>
           <DialogDescription>
-            Upload a photo of your receipt for categorization and fraud analysis.
+            Upload a photo of your receipt for categorization.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -172,23 +152,13 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
 
           {analysisResult && (
             <div className="space-y-4">
-              <Alert variant={analysisResult.fraud.isFraudulent ? "destructive" : "default"}>
-                {analysisResult.fraud.isFraudulent ? <AlertTriangle className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                <AlertTitle>Fraud Detection</AlertTitle>
-                <AlertDescription>
-                  {analysisResult.fraud.isFraudulent ? "Potential fraud detected." : "Looks legitimate."}
-                  <p className="text-xs">{analysisResult.fraud.fraudExplanation}</p>
-                  <p className="text-xs mt-1">Confidence: {(analysisResult.fraud.confidenceScore * 100).toFixed(0)}%</p>
-                </AlertDescription>
-              </Alert>
-
                <Alert>
                 <Sparkles className="h-4 w-4" />
                 <AlertTitle>Dynamic Categorization</AlertTitle>
                 <AlertDescription>
-                  <p>Vendor: <span className="font-semibold">{analysisResult.category.vendor}</span></p>
-                  <p>Category: <span className="font-semibold capitalize">{analysisResult.category.category}</span></p>
-                  <p>Total: <span className="font-semibold">₹{analysisResult.category.totalAmount.toFixed(2)}</span></p>
+                  <p>Vendor: <span className="font-semibold">{analysisResult.vendor}</span></p>
+                  <p>Category: <span className="font-semibold capitalize">{analysisResult.category}</span></p>
+                  <p>Total: <span className="font-semibold">₹{analysisResult.totalAmount.toFixed(2)}</span></p>
                 </AlertDescription>
               </Alert>
             </div>
@@ -199,7 +169,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
           {analysisResult ? (
             <>
               <Button variant="outline" onClick={() => setAnalysisResult(null)}>Analyze Again</Button>
-              <Button onClick={handleSave} disabled={analysisResult.fraud.isFraudulent && analysisResult.fraud.confidenceScore > 0.75}>
+              <Button onClick={handleSave}>
                 <Check className="mr-2 h-4 w-4" />
                 Save Receipt
               </Button>

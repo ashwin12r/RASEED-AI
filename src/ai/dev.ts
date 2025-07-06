@@ -6,7 +6,6 @@ import '@/ai/flows/generate-shopping-list-pass.ts';
 import '@/ai/flows/ingest-and-analyze-receipt.ts';
 import '@/ai/flows/spending-analysis.ts';
 import '@/ai/flows/local-language-query.ts';
-import '@/ai/flows/fraud-detection.ts';
 import '@/ai/flows/savings-suggestions.ts';
 import '@/ai/flows/text-to-speech.ts';
 import '@/ai/flows/warranty-tracker.ts';
