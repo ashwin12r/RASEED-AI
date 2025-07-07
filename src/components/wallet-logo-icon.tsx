@@ -12,38 +12,36 @@ export const WalletLogoIcon = ({ className }: { className?: string }) => (
     className={className}
     aria-label="Project Raseed Logo"
   >
-    {/* Wallet Icon on the left */}
-    <g id="wallet">
+    {/* Wallet Icon */}
+    <g id="wallet-icon">
       <defs>
-        <clipPath id="wallet-clip-path">
+        <clipPath id="wallet-clip">
           <rect x="0" y="0" width="95" height="80" rx="14" ry="14" />
         </clipPath>
       </defs>
-      <g clipPath="url(#wallet-clip-path)">
-        {/* Blue background layer */}
+      <g clipPath="url(#wallet-clip)">
         <rect x="0" y="0" width="95" height="80" fill="#4285F4" />
-        {/* Red layer with wave */}
         <path d="M0,0 H95 V48 C 65,60 30,36 0,48 Z" fill="#EA4335" />
-        {/* Yellow layer with wave */}
         <path d="M0,0 H95 V32 C 65,44 30,20 0,32 Z" fill="#FBBC05" />
-        {/* Green top layer */}
-        <path d="M0,0 H95 V16 H0 Z" fill="#34A853" />
+        <rect x="0" y="0" width="95" height="16" fill="#34A853" />
       </g>
     </g>
 
-    {/* Letter 'R' on the right */}
-    <g id="letter-r" transform="translate(10, 0)">
-      {/* Base of R in blue */}
-      <path d="M105,0 V80 H122 V45 C142,45 152,35 152,22.5 C152,10 142,0 122,0 Z" fill="#4285F4" />
-      {/* Red overlay on bowl */}
-      <path d="M122,0 C130,0 145,5 145,15 C145,8 138,0 122,0 Z" fill="#C63828" />
-      {/* Green leg */}
-      <path d="M128,45 L150,80 H140 L122,48 Z" fill="#34A853" />
-      {/* Yellow leg segment */}
-      <path d="M128,45 L132,54 L124,49 Z" fill="#FBBC05" />
-      
-      {/* Sparkle */}
-      <path d="M160,5 L163,12 L171,14 L163,16 L160,23 L157,16 L149,14 L157,12 Z" fill="#A8C7FA" />
+    {/* Letter 'R' */}
+    <g id="letter-r" transform="translate(100,0)">
+        {/* Blue Structure (stem and outer bowl) */}
+        <path d="M0,0 H17 V80 H0V0Z" fill="#4285F4"/>
+        <path d="M17,50 H42 C58,50 68,40 68,25 C68,10 58,0 42,0 H0V15 H42 C50,15 53,20 53,25 C53,30 50,35 42,35 H17V50Z" fill="#4285F4"/>
+        
+        {/* Red Bowl */}
+        <path d="M17,15 H42 C50,15 53,20 53,25 C53,30 50,35 42,35 H17V15Z" fill="#EA4335"/>
+
+        {/* Leg */}
+        <path d="M28,50 L58,80 H45 L21,50H28Z" fill="#34A853"/>
+        <path d="M17,50 L28,50 L23,60Z" fill="#FBBC05"/>
+
+        {/* Sparkle */}
+        <path d="M72,4 L75,11 L83,13 L75,15 L72,22 L69,15 L61,13 L69,11Z" fill="#A8C7FA"/>
     </g>
   </svg>
 );
