@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Wallet } from "lucide-react"
+import { Send, Wallet, Mic, Volume2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useReceipts } from "@/hooks/use-receipts"
 import { analyzeSpending } from "@/ai/flows/spending-analysis"
 import { generateShoppingListPass } from "@/ai/flows/generate-shopping-list-pass"
 import { useToast } from "@/hooks/use-toast"
+import { textToSpeech } from "@/ai/flows/text-to-speech"
 
 interface Message {
   id: number;
@@ -32,9 +33,54 @@ export default function AnalysisPage() {
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  
   const { receipts } = useReceipts()
   const { toast } = useToast()
+  
   const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    // @ts-ignore
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({
+        title: "Browser not supported",
+        description: "Voice recognition is not supported by your browser.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const speechToText = event.results[0][0].transcript;
+      handleSend(null, speechToText); // Pass the transcribed text to handleSend
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      if (event.error !== 'no-speech') {
+        toast({ title: "Voice Error", description: "Something went wrong with voice recognition.", variant: "destructive"})
+      }
+      setIsListening(false);
+    };
+    
+    recognition.onend = () => {
+      setIsListening(false);
+    }
+
+    recognitionRef.current = recognition;
+  }, [toast]);
 
   useEffect(() => {
     if (scrollViewportRef.current) {
@@ -42,25 +88,39 @@ export default function AnalysisPage() {
     }
   }, [messages]);
 
-  const handleSend = (e: FormEvent) => {
-    e.preventDefault()
-    if (input.trim() === "" || isLoading) return
+  const handleToggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else if (!isLoading && !isSpeaking) {
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
+  const handleSend = async (e: FormEvent | null, voiceQuery?: string) => {
+    e?.preventDefault();
+    const query = voiceQuery || input;
+
+    if (query.trim() === "" || isLoading) return
     
-    const userMessage: Message = { id: Date.now(), text: input, sender: 'user' }
+    const userMessage: Message = { id: Date.now(), text: query, sender: 'user' }
     setMessages(prev => [...prev, userMessage])
     
-    const currentInput = input;
     setInput("")
     setIsLoading(true)
 
     const handleAiResponse = async () => {
       try {
         let botResponse: Message;
-        if (currentInput.toLowerCase().includes('shopping list')) {
-          const result = await generateShoppingListPass({ query: currentInput });
+        let textForSpeech = "";
+
+        if (query.toLowerCase().includes('shopping list')) {
+          const result = await generateShoppingListPass({ query });
+          textForSpeech = "Here is the shopping list you requested. You can add it to your Google Wallet.";
           botResponse = {
             id: Date.now() + 1,
-            text: "Here is the shopping list you requested. You can add it to your Google Wallet.",
+            text: textForSpeech,
             sender: 'bot',
             walletJwt: result.jwt,
             shoppingListItems: result.items,
@@ -68,13 +128,16 @@ export default function AnalysisPage() {
           };
         } else {
           if (receipts.length === 0) {
+            textForSpeech = "I don't have any receipt data to analyze. Please add some receipts first.";
             botResponse = {
               id: Date.now() + 1,
-              text: "I don't have any receipt data to analyze. Please add some receipts first.",
+              text: textForSpeech,
               sender: 'bot'
             };
           } else {
-            const result = await analyzeSpending({ query: currentInput, receiptData: JSON.stringify(receipts) });
+            const result = await analyzeSpending({ query, receiptData: JSON.stringify(receipts) });
+            textForSpeech = result.summary || "I'm not sure how to answer that.";
+            if (result.savingsSuggestions) textForSpeech += ` ${result.savingsSuggestions}`;
             botResponse = {
               id: Date.now() + 1,
               text: (
@@ -88,6 +151,19 @@ export default function AnalysisPage() {
           }
         }
         setMessages(prev => [...prev, botResponse]);
+
+        if (voiceQuery) {
+          setIsSpeaking(true);
+          const ttsResponse = await textToSpeech(textForSpeech);
+          if (ttsResponse.media && audioRef.current) {
+            audioRef.current.src = ttsResponse.media;
+            audioRef.current.play();
+            audioRef.current.onended = () => setIsSpeaking(false);
+          } else {
+            setIsSpeaking(false);
+            throw new Error("No audio media returned from the service.");
+          }
+        }
       } catch (error) {
         console.error("AI response error:", error);
         toast({
@@ -168,22 +244,26 @@ export default function AnalysisPage() {
         </ScrollArea>
       </div>
       <div className="p-4 border-t bg-background">
-        <form onSubmit={handleSend}>
+        <form onSubmit={(e) => handleSend(e, undefined)}>
           <div className="relative">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about your spending..."
-              className="pr-12"
-              disabled={isLoading}
+              placeholder={isListening ? "Listening..." : "Ask about your spending..."}
+              className="pr-24"
+              disabled={isLoading || isListening}
               aria-label="Chat input"
             />
-            <Button type="submit" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" disabled={isLoading} aria-label="Send message">
+            <Button type="button" size="icon" className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8" disabled={isLoading || isSpeaking} onClick={handleToggleListening} aria-label="Use microphone">
+                {isListening ? <Volume2 className="h-4 w-4 text-destructive animate-pulse" /> : <Mic className="h-4 w-4" />}
+            </Button>
+            <Button type="submit" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" disabled={isLoading || isListening || isSpeaking} aria-label="Send message">
               <Send className="h-4 w-4" />
             </Button>
           </div>
         </form>
       </div>
+      <audio ref={audioRef} className="hidden" />
     </div>
   )
 }
