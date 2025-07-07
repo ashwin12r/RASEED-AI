@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/use-auth'
-import { Wallet } from 'lucide-react'
+import { WalletLogoIcon } from '@/components/wallet-logo-icon'
 
 // Simple SVG for Google icon
 const GoogleIcon = () => (
@@ -37,8 +37,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="p-2 bg-primary rounded-lg">
-                <Wallet className="w-8 h-8 text-primary-foreground" />
+             <div className="p-2 bg-primary rounded-lg">
+                <WalletLogoIcon className="w-8 h-8" />
             </div>
           </div>
           <CardTitle className="text-2xl">Welcome to Project Raseed</CardTitle>
@@ -50,7 +50,7 @@ export default function LoginPage() {
             <span>Sign in with Google</span>
           </Button>
         </CardContent>
-      </Card>
+      </card>
     </div>
   )
 }

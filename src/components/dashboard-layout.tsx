@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Wallet, LayoutDashboard, ReceiptText, LineChart, Settings, ShieldCheck, BellRing, LogOut, Loader2 } from "lucide-react"
+import { LayoutDashboard, ReceiptText, LineChart, Settings, ShieldCheck, BellRing, LogOut, Loader2 } from "lucide-react"
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -22,6 +22,7 @@ import React from "react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { isFirebaseConfigured } from "@/lib/firebase"
 import { FirebaseConfigError } from "./firebase-config-error"
+import { WalletLogoIcon } from "./wallet-logo-icon"
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -51,7 +52,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="p-4">
           <Link href="/" onClick={handleHeaderClick} className="flex items-center gap-2.5 font-bold text-lg group-data-[collapsible=icon]:justify-center">
             <div className="p-1.5 bg-primary rounded-lg">
-                <Wallet className="w-5 h-5 text-primary-foreground" />
+                <WalletLogoIcon className="w-5 h-5" />
             </div>
             <span className="text-foreground group-data-[collapsible=icon]:hidden">Project Raseed</span>
           </Link>
@@ -109,7 +110,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 md:hidden flex items-center p-2 border-b bg-background/80 backdrop-blur-sm">
             <button onClick={toggleSidebar} className="flex items-center gap-2 font-bold text-lg p-2 -ml-2 rounded-md hover:bg-accent focus:outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="p-1.5 bg-primary rounded-lg">
-                    <Wallet className="w-5 h-5 text-primary-foreground" />
+                    <WalletLogoIcon className="w-5 h-5" />
                 </div>
                 <span className="text-foreground">Project Raseed</span>
             </button>
