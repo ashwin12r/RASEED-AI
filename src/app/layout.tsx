@@ -6,6 +6,8 @@ import { DashboardLayout } from '@/components/dashboard-layout'
 import { ReceiptsProvider } from '@/hooks/use-receipts'
 import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/hooks/use-auth'
+import { WarrantiesProvider } from '@/hooks/use-warranties'
+import { RemindersProvider } from '@/hooks/use-reminders'
 
 export const metadata: Metadata = {
   title: 'Project Raseed',
@@ -32,11 +34,15 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <ReceiptsProvider>
-              <DashboardLayout>
-                {children}
-              </DashboardLayout>
-            </ReceiptsProvider>
+            <WarrantiesProvider>
+              <RemindersProvider>
+                <ReceiptsProvider>
+                  <DashboardLayout>
+                    {children}
+                  </DashboardLayout>
+                </ReceiptsProvider>
+              </RemindersProvider>
+            </WarrantiesProvider>
           </AuthProvider>
         </ThemeProvider>
         <Toaster />

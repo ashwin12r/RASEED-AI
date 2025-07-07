@@ -1,14 +1,21 @@
 
 'use client'
-import React, { useState, useEffect } from "react"
+import React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ShieldCheck, Loader2 } from "lucide-react"
-import { useReceipts } from "@/hooks/use-receipts"
-import { trackWarranty } from "@/ai/flows/warranty-tracker"
+import { ShieldCheck, Loader2, MoreHorizontal, Trash2, PlusCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useWarranties } from "@/hooks/use-warranties"
 import { useToast } from "@/hooks/use-toast"
 import { differenceInCalendarDays, isAfter } from "date-fns"
+import { AddWarrantyDialog } from "@/components/add-warranty-dialog"
 
 interface WarrantyItem {
   id: string;
@@ -18,147 +25,133 @@ interface WarrantyItem {
   status: "Active" | "Expiring Soon" | "Expired";
 }
 
-
 export default function WarrantyPage() {
-    const [warranties, setWarranties] = useState<WarrantyItem[]>([]);
-    const [isScanning, setIsScanning] = useState(true);
-    const { receipts, isLoading: isReceiptsLoading } = useReceipts();
+    const { warranties, isLoading, deleteWarranty } = useWarranties();
     const { toast } = useToast();
 
-    useEffect(() => {
-        if (isReceiptsLoading) return;
+    const processedWarranties = React.useMemo(() => {
+        return warranties.map(item => {
+            const today = new Date();
+            const endDate = item.warrantyEndDate.toDate();
+            let status: WarrantyItem["status"] = "Active";
 
-        const fetchWarranties = async () => {
-            if (receipts.length === 0) {
-                setIsScanning(false);
-                setWarranties([]);
-                return;
+            if (isAfter(today, endDate)) {
+                status = "Expired";
+            } else if (differenceInCalendarDays(endDate, today) <= 30) {
+                status = "Expiring Soon";
             }
 
-            setIsScanning(true);
-            try {
-                const allWarrantiesPromises = receipts.map(receipt =>
-                    trackWarranty({ receiptDataUri: receipt.receiptDataUri })
-                );
+            return {
+                id: item.id,
+                productName: item.productName,
+                purchaseDate: item.purchaseDate.toDate().toLocaleDateString(),
+                warrantyEndDate: endDate.toLocaleDateString(),
+                status,
+            };
+        });
+    }, [warranties]);
+    
+    const handleDelete = async (id: string) => {
+      try {
+        await deleteWarranty(id);
+        toast({
+          title: "Warranty Deleted",
+          description: "The warranty has been successfully removed.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Could not delete the warranty.",
+          variant: "destructive",
+        });
+      }
+    };
 
-                const results = await Promise.allSettled(allWarrantiesPromises);
-                
-                const newWarranties: WarrantyItem[] = [];
-                results.forEach((result, index) => {
-                    if (result.status === 'fulfilled' && result.value.items) {
-                        result.value.items.forEach(item => {
-                            try {
-                                const today = new Date();
-                                const endDate = new Date(item.warrantyEndDate);
-                                let status: WarrantyItem["status"] = "Active";
+    const getStatusVariant = (status: string) => {
+      switch (status) {
+        case "Active": return "default";
+        case "Expiring Soon": return "secondary";
+        case "Expired": return "destructive";
+        default: return "outline";
+      }
+    };
 
-                                if (isAfter(today, endDate)) {
-                                    status = "Expired";
-                                } else if (differenceInCalendarDays(endDate, today) <= 30) {
-                                    status = "Expiring Soon";
-                                }
-
-                                newWarranties.push({
-                                    id: `${receipts[index].id}-${item.productName}`,
-                                    productName: item.productName,
-                                    purchaseDate: new Date(item.purchaseDate).toLocaleDateString(),
-                                    warrantyEndDate: endDate.toLocaleDateString(),
-                                    status,
-                                });
-                            } catch(e) {
-                                console.error('Could not parse date from warranty', e);
-                            }
-                        });
-                    } else if (result.status === 'rejected') {
-                         console.error("Failed to fetch warranty for a receipt:", result.reason);
-                    }
-                });
-
-                setWarranties(newWarranties);
-
-            } catch (error) {
-                 console.error("Error fetching warranties:", error);
-                 toast({
-                    title: "Error",
-                    description: "Could not fetch warranty information.",
-                    variant: "destructive",
-                });
-            } finally {
-                setIsScanning(false);
-            }
-        };
-
-        fetchWarranties();
-    }, [receipts, isReceiptsLoading, toast]);
-
-
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "default"
-      case "Expiring Soon":
-        return "secondary"
-      case "Expired":
-        return "destructive"
-      default:
-        return "outline"
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-4">
-        <ShieldCheck className="h-8 w-8 text-primary" />
-        <div>
-            <h1 className="text-2xl font-bold md:text-3xl">Warranty Tracker</h1>
-            <p className="text-muted-foreground">Automatically track warranties from your receipts.</p>
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <ShieldCheck className="h-8 w-8 text-primary" />
+                <div>
+                    <h1 className="text-2xl font-bold md:text-3xl">Warranty Tracker</h1>
+                    <p className="text-muted-foreground">Manually track warranties for your products.</p>
+                </div>
+            </div>
+            <AddWarrantyDialog trigger={
+              <Button><PlusCircle className="mr-2 h-4 w-4" /> Add Warranty</Button>
+            } />
         </div>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Tracked Warranties</CardTitle>
-          <CardDescription>Here are the warranties we've found on your receipts.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Purchase Date</TableHead>
-                <TableHead>Warranty Ends</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isScanning ? (
-                  <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                          <div className="flex flex-col items-center justify-center gap-2">
-                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                            <span>{isReceiptsLoading ? 'Loading receipts...' : 'Scanning receipts for warranties...'}</span>
-                          </div>
-                      </TableCell>
-                  </TableRow>
-              ) : warranties.length > 0 ? (
-                warranties.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.productName}</TableCell>
-                    <TableCell>{item.purchaseDate}</TableCell>
-                    <TableCell>{item.warrantyEndDate}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={getStatusVariant(item.status) as any}>{item.status}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                 <TableRow>
-                    <TableCell colSpan={4} className="text-center h-24">No warranties found. Add receipts to get started.</TableCell>
+        <Card>
+          <CardHeader>
+            <CardTitle>Tracked Warranties</CardTitle>
+            <CardDescription>Here are the warranties you are tracking.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Purchase Date</TableHead>
+                  <TableHead>Warranty Ends</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  )
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                              <span>Loading warranties...</span>
+                            </div>
+                        </TableCell>
+                    </TableRow>
+                ) : processedWarranties.length > 0 ? (
+                  processedWarranties.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.productName}</TableCell>
+                      <TableCell>{item.purchaseDate}</TableCell>
+                      <TableCell>{item.warrantyEndDate}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(item.status) as any}>{item.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive" onClick={() => handleDelete(item.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                               Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                   <TableRow>
+                      <TableCell colSpan={5} className="text-center h-24">No warranties found. Add one to get started.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    )
 }
