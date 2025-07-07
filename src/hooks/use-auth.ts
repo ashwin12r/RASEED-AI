@@ -4,7 +4,7 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import { onAuthStateChanged, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
 import { useToast } from './use-toast';
 
@@ -34,6 +34,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(user);
       setLoading(false);
     });
+
+    // Check for redirect result after page load
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // This means a sign-in was just completed.
+          // onAuthStateChanged will handle setting the user state, but we can show a success toast here.
+          toast({ title: "Successfully signed in!" });
+          router.push('/');
+        }
+      })
+      .catch((error) => {
+        console.error("Error processing redirect result:", error);
+        // Don't show a toast for user-cancelled flows.
+        if (error.code !== 'auth/cancelled-popup-request') {
+            toast({
+                title: "Sign in failed",
+                description: "There was an issue completing your sign-in. Please try again.",
+                variant: "destructive"
+            });
+        }
+      });
       
     return () => unsubscribe();
   }, []);
@@ -50,23 +72,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      setUser(result.user);
-      router.push('/');
-      toast({ title: "Successfully signed in!" });
+      // This will redirect the user to the Google sign-in page.
+      // The rest of the logic is handled in the useEffect hook after redirect.
+      await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
-       if (error.code === 'auth/popup-closed-by-user') {
-          toast({
-              title: "Sign-in cancelled",
-              description: "The sign-in window was closed. Please check if your browser is blocking pop-ups and try again.",
-              variant: "destructive"
-          });
-      } else {
-        console.error("Error signing in with Google: ", error);
-        toast({ title: "Sign in failed", description: error.message || "Could not sign in with Google.", variant: "destructive" });
-      }
-    } finally {
-        setLoading(false);
+        console.error("Error starting redirect sign in: ", error);
+        toast({ title: "Sign in failed", description: error.message || "Could not start the sign-in process.", variant: "destructive" });
+        setLoading(false); // Only set loading to false if redirect itself fails
     }
   };
 
