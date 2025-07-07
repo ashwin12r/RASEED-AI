@@ -18,6 +18,11 @@ import { useToast } from "@/hooks/use-toast"
 import { categorizeReceipt, CategorizeReceiptOutput } from "@/ai/flows/dynamic-categorization"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useReceipts } from "@/hooks/use-receipts"
+import { trackWarranty } from "@/ai/flows/warranty-tracker"
+import { setReturnReminder } from "@/ai/flows/return-reminder"
+import { useWarranties } from "@/hooks/use-warranties"
+import { useReminders } from "@/hooks/use-reminders"
+import { Timestamp } from "firebase/firestore"
 
 export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const [isOpen, setIsOpen] = React.useState(false);
@@ -25,9 +30,13 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [receiptDataUri, setReceiptDataUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<CategorizeReceiptOutput | null>(null);
   const { toast } = useToast();
   const { addReceipt } = useReceipts();
+  const { addWarranty } = useWarranties();
+  const { addReminder } = useReminders();
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
@@ -86,10 +95,11 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
     setReceiptDataUri(null);
     setAnalysisResult(null);
     setIsLoading(false);
+    setIsSaving(false);
     setIsOpen(false);
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!analysisResult || !receiptDataUri) {
         toast({
             title: "No analysis data",
@@ -98,15 +108,62 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
         });
         return;
     }
-
-    addReceipt({ ...analysisResult, receiptDataUri });
+    
+    setIsSaving(true);
+    await addReceipt({ ...analysisResult, receiptDataUri });
     
     toast({
         title: "Receipt Saved",
-        description: "Your receipt has been successfully saved.",
+        description: "Scanning for warranties and reminders in the background...",
     });
     
-    resetDialog();
+    resetDialog(); // Close dialog immediately for better UX
+
+    // Run background scans for warranties and reminders
+    try {
+        const [warrantyResult, reminderResult] = await Promise.all([
+            trackWarranty({ receiptDataUri }),
+            setReturnReminder({ receiptDataUri })
+        ]);
+
+        let warrantiesFound = 0;
+        if (warrantyResult?.items?.length > 0) {
+            warrantiesFound = warrantyResult.items.length;
+            for (const item of warrantyResult.items) {
+                await addWarranty({
+                    productName: item.productName,
+                    purchaseDate: Timestamp.fromDate(new Date(item.purchaseDate)),
+                    warrantyEndDate: Timestamp.fromDate(new Date(item.warrantyEndDate)),
+                });
+            }
+        }
+
+        let remindersFound = 0;
+        if (reminderResult?.reminders?.length > 0) {
+            remindersFound = reminderResult.reminders.length;
+            for (const item of reminderResult.reminders) {
+                await addReminder({
+                    productName: item.productName,
+                    purchaseDate: Timestamp.fromDate(new Date(item.purchaseDate)),
+                    returnByDate: Timestamp.fromDate(new Date(item.returnByDate)),
+                });
+            }
+        }
+
+        if (warrantiesFound > 0 || remindersFound > 0) {
+            toast({
+                title: "Scan Complete",
+                description: `Found ${warrantiesFound} warranty/ies and ${remindersFound} reminder(s). They've been added to your lists.`,
+            });
+        }
+    } catch (error) {
+        console.error("Failed to scan for warranties/reminders:", error);
+        toast({
+            title: "Background Scan Failed",
+            description: "Could not automatically find warranties or reminders for this receipt.",
+            variant: "destructive"
+        });
+    }
   }
 
   return (
@@ -138,7 +195,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
                         <p className="text-xs text-muted-foreground">PNG, JPG, etc.</p>
                     </div>
                    )}
-                    <Input id="receipt-file" type="file" className="hidden" accept="image/*" onChange={handleFileChange} disabled={isLoading} />
+                    <Input id="receipt-file" type="file" className="hidden" accept="image/*" onChange={handleFileChange} disabled={isLoading || isSaving} />
                 </label>
             </div>
           </div>
@@ -168,9 +225,9 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
         <DialogFooter>
           {analysisResult ? (
             <>
-              <Button variant="outline" onClick={() => setAnalysisResult(null)}>Analyze Again</Button>
-              <Button onClick={handleSave}>
-                <Check className="mr-2 h-4 w-4" />
+              <Button variant="outline" onClick={() => setAnalysisResult(null)} disabled={isSaving}>Analyze Again</Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
                 Save Receipt
               </Button>
             </>
