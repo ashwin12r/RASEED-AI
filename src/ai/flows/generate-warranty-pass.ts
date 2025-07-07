@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // This is the data we expect from the client.
 const WarrantyPassInputSchema = z.object({
+  id: z.string(),
   productName: z.string(),
   purchaseDate: z.string().describe("The date of purchase in ISO format."),
   warrantyEndDate: z.string().describe("The warranty end date in ISO format."),
@@ -85,6 +86,14 @@ const generateWarrantyPassFlow = ai.defineFlow(
           body: `Product: ${warranty.productName}\nPurchase Date: ${new Date(warranty.purchaseDate).toLocaleDateString()}\nExpires On: ${new Date(warranty.warrantyEndDate).toLocaleDateString()}`
         },
       ],
+      linksModuleData: {
+          uris: [
+              {
+                  uri: `${appUrl}/warranty?id=${warranty.id}`,
+                  description: 'View Warranty in App'
+              }
+          ]
+      }
     };
     
     // 3. Create and sign the JWT

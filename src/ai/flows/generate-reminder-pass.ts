@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 // This is the data we expect from the client.
 const ReminderPassInputSchema = z.object({
+  id: z.string(),
   productName: z.string(),
   purchaseDate: z.string().describe("The date of purchase in ISO format."),
   returnByDate: z.string().describe("The return-by date in ISO format."),
@@ -85,6 +86,14 @@ const generateReminderPassFlow = ai.defineFlow(
           body: `Product: ${reminder.productName}\nPurchase Date: ${new Date(reminder.purchaseDate).toLocaleDateString()}`
         },
       ],
+      linksModuleData: {
+          uris: [
+              {
+                  uri: `${appUrl}/reminders?id=${reminder.id}`,
+                  description: 'View Reminder in App'
+              }
+          ]
+      }
     };
     
     // 3. Create and sign the JWT

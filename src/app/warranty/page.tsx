@@ -82,6 +82,7 @@ export default function WarrantyPage() {
 
         try {
             const { jwt } = await generateWarrantyPass({
+                id: originalWarranty.id,
                 productName: originalWarranty.productName,
                 purchaseDate: originalWarranty.purchaseDate.toDate().toISOString(),
                 warrantyEndDate: originalWarranty.warrantyEndDate.toDate().toISOString(),

@@ -76,6 +76,7 @@ export default function RemindersPage() {
 
         try {
             const { jwt } = await generateReminderPass({
+                id: originalReminder.id,
                 productName: originalReminder.productName,
                 purchaseDate: originalReminder.purchaseDate.toDate().toISOString(),
                 returnByDate: originalReminder.returnByDate.toDate().toISOString(),

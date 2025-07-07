@@ -97,8 +97,8 @@ const generateWalletPassFlow = ai.defineFlow(
       linksModuleData: {
           uris: [
               {
-                  uri: 'https://www.example.com',
-                  description: 'View Online Receipt'
+                  uri: `${appUrl}/receipts?id=${receipt.id}`,
+                  description: 'View Receipt in App'
               }
           ]
       }

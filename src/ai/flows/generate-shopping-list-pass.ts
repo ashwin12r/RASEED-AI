@@ -110,6 +110,14 @@ const generateShoppingListPassFlow = ai.defineFlow(
                 body: items.join('\n')
             }
         ],
+        linksModuleData: {
+          uris: [
+              {
+                  uri: `${appUrl}/analysis`,
+                  description: 'Back to Analysis'
+              }
+          ]
+        }
     };
     
     // 4. Create and sign the JWT
