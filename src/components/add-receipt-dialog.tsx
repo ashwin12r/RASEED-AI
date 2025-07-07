@@ -181,7 +181,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
             Upload a photo of your receipt for categorization.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="receipt-file">Receipt Media</Label>
             <div className="flex items-center justify-center w-full">

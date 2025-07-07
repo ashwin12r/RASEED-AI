@@ -164,7 +164,7 @@ export function AddReminderDialog({ trigger }: { trigger: React.ReactNode }) {
             Upload a receipt to auto-fill, or enter details manually.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
            <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="reminder-file">Receipt Media (Optional)</Label>
             <div className="flex items-center justify-center w-full">
