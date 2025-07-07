@@ -53,10 +53,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Successfully signed in!" });
     } catch (error: any) {
       console.error("Error signing in: ", error);
-      // Don't show a toast for user-cancelled flows.
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+
+      // If the error is due to a closed popup and we're on a non-local domain,
+      // it's likely an authorization issue.
+      if (error.code === 'auth/popup-closed-by-user' && typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+        toast({
+          title: "Sign-In Misconfigured",
+          description: "Your live URL must be added to the 'Authorized domains' list in your Firebase Authentication settings to allow sign-in.",
+          variant: "destructive",
+          duration: 10000,
+        });
+      }
+      // Don't show a generic "Sign in failed" toast for user-cancelled flows.
+      else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
         toast({ title: "Sign in failed", description: error.message || "Could not sign in.", variant: "destructive" });
       }
+
       setLoading(false); // set loading false on error because onAuthStateChanged won't fire.
     }
   };
