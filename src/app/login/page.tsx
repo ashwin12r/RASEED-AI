@@ -37,7 +37,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
              <div className="p-2 bg-primary rounded-lg">
-                <WalletLogoIcon className="h-10 w-auto" />
+                <WalletLogoIcon className="h-14 w-auto" />
             </div>
           </div>
           <CardTitle className="text-2xl">Welcome to Project Raseed</CardTitle>

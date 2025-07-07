@@ -52,7 +52,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="p-4">
           <Link href="/" onClick={handleHeaderClick} className="flex items-center gap-2.5 font-bold text-lg group-data-[collapsible=icon]:justify-center">
             <div className="p-1.5 bg-primary rounded-lg">
-                <WalletLogoIcon className="h-6 w-auto" />
+                <WalletLogoIcon className="h-8 w-auto" />
             </div>
             <span className="text-foreground group-data-[collapsible=icon]:hidden">Project Raseed</span>
           </Link>
@@ -110,7 +110,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         <header className="sticky top-0 z-10 md:hidden flex items-center p-2 border-b bg-background/80 backdrop-blur-sm">
             <button onClick={toggleSidebar} className="flex items-center gap-2 font-bold text-lg p-2 -ml-2 rounded-md hover:bg-accent focus:outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="p-1.5 bg-primary rounded-lg">
-                    <WalletLogoIcon className="h-6 w-auto" />
+                    <WalletLogoIcon className="h-8 w-auto" />
                 </div>
                 <span className="text-foreground">Project Raseed</span>
             </button>
