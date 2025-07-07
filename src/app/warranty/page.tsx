@@ -4,20 +4,22 @@ import React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { ShieldCheck, Loader2, MoreHorizontal, Trash2, PlusCircle } from "lucide-react"
+import { ShieldCheck, Loader2, MoreHorizontal, Trash2, PlusCircle, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu"
 import { useWarranties } from "@/hooks/use-warranties"
 import { useToast } from "@/hooks/use-toast"
 import { differenceInCalendarDays, isAfter } from "date-fns"
 import { AddWarrantyDialog } from "@/components/add-warranty-dialog"
+import { generateWarrantyPass } from "@/ai/flows/generate-warranty-pass"
 
-interface WarrantyItem {
+interface ProcessedWarrantyItem {
   id: string;
   productName: string;
   purchaseDate: string;
@@ -28,12 +30,13 @@ interface WarrantyItem {
 export default function WarrantyPage() {
     const { warranties, isLoading, deleteWarranty } = useWarranties();
     const { toast } = useToast();
+    const [isWalletLoading, setIsWalletLoading] = React.useState<string | null>(null);
 
-    const processedWarranties = React.useMemo(() => {
+    const processedWarranties = React.useMemo((): ProcessedWarrantyItem[] => {
         return warranties.map(item => {
             const today = new Date();
             const endDate = item.warrantyEndDate.toDate();
-            let status: WarrantyItem["status"] = "Active";
+            let status: ProcessedWarrantyItem["status"] = "Active";
 
             if (isAfter(today, endDate)) {
                 status = "Expired";
@@ -66,6 +69,40 @@ export default function WarrantyPage() {
         });
       }
     };
+    
+    const handleAddToWallet = async (warrantyId: string) => {
+        setIsWalletLoading(warrantyId);
+        const originalWarranty = warranties.find(w => w.id === warrantyId);
+
+        if (!originalWarranty) {
+            toast({ title: "Error", description: "Could not find warranty details.", variant: "destructive" });
+            setIsWalletLoading(null);
+            return;
+        }
+
+        try {
+            const { jwt } = await generateWarrantyPass({
+                productName: originalWarranty.productName,
+                purchaseDate: originalWarranty.purchaseDate.toDate().toISOString(),
+                warrantyEndDate: originalWarranty.warrantyEndDate.toDate().toISOString(),
+            });
+            window.open(`https://pay.google.com/gp/v/save/${jwt}`, '_blank');
+            toast({
+                title: "Redirecting to Google Wallet",
+                description: "Please follow the instructions in the new tab to save your pass.",
+            });
+        } catch(error) {
+            console.error("Failed to generate wallet pass:", error);
+            toast({
+                title: "Error",
+                description: "Could not generate Google Wallet pass. Please ensure your credentials are set up correctly.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsWalletLoading(null);
+        }
+    };
+
 
     const getStatusVariant = (status: string) => {
       switch (status) {
@@ -129,11 +166,16 @@ export default function WarrantyPage() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
+                               {isWalletLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                               <span className="sr-only">Toggle menu</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleAddToWallet(item.id)} disabled={isWalletLoading !== null}>
+                                <Wallet className="mr-2 h-4 w-4" />
+                                Add to Wallet
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive" onClick={() => handleDelete(item.id)}>
                               <Trash2 className="mr-2 h-4 w-4" />
                                Delete

@@ -4,18 +4,20 @@ import React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { BellRing, Info, Loader2, MoreHorizontal, Trash2, PlusCircle } from "lucide-react"
+import { BellRing, Info, Loader2, MoreHorizontal, Trash2, PlusCircle, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useReminders } from "@/hooks/use-reminders"
 import { useToast } from "@/hooks/use-toast"
 import { differenceInCalendarDays } from 'date-fns'
 import { AddReminderDialog } from "@/components/add-reminder-dialog"
+import { generateReminderPass } from "@/ai/flows/generate-reminder-pass"
 
 interface ReminderItem {
     id: string;
@@ -28,8 +30,9 @@ interface ReminderItem {
 export default function RemindersPage() {
     const { reminders, isLoading, deleteReminder } = useReminders();
     const { toast } = useToast();
+    const [isWalletLoading, setIsWalletLoading] = React.useState<string | null>(null);
 
-    const processedReminders = React.useMemo(() => {
+    const processedReminders = React.useMemo((): ReminderItem[] => {
       return reminders.map(reminder => {
         const returnDate = reminder.returnByDate.toDate();
         const today = new Date();
@@ -59,6 +62,39 @@ export default function RemindersPage() {
           variant: "destructive",
         });
       }
+    };
+    
+    const handleAddToWallet = async (reminderId: string) => {
+        setIsWalletLoading(reminderId);
+        const originalReminder = reminders.find(r => r.id === reminderId);
+
+        if (!originalReminder) {
+            toast({ title: "Error", description: "Could not find reminder details.", variant: "destructive" });
+            setIsWalletLoading(null);
+            return;
+        }
+
+        try {
+            const { jwt } = await generateReminderPass({
+                productName: originalReminder.productName,
+                purchaseDate: originalReminder.purchaseDate.toDate().toISOString(),
+                returnByDate: originalReminder.returnByDate.toDate().toISOString(),
+            });
+            window.open(`https://pay.google.com/gp/v/save/${jwt}`, '_blank');
+            toast({
+                title: "Redirecting to Google Wallet",
+                description: "Please follow the instructions in the new tab to save your pass.",
+            });
+        } catch(error) {
+            console.error("Failed to generate wallet pass:", error);
+            toast({
+                title: "Error",
+                description: "Could not generate Google Wallet pass. Please ensure your credentials are set up correctly.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsWalletLoading(null);
+        }
     };
 
     return (
@@ -121,11 +157,16 @@ export default function RemindersPage() {
                          <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
+                              {isWalletLoading === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreHorizontal className="h-4 w-4" />}
                               <span className="sr-only">Toggle menu</span>
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleAddToWallet(item.id)} disabled={isWalletLoading !== null}>
+                                <Wallet className="mr-2 h-4 w-4" />
+                                Add to Wallet
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive focus:text-destructive-foreground focus:bg-destructive" onClick={() => handleDelete(item.id)}>
                               <Trash2 className="mr-2 h-4 w-4" />
                                Delete

@@ -13,3 +13,5 @@ import '@/ai/flows/return-reminder.ts';
 import '@/ai/flows/generate-wallet-pass.ts';
 import '@/ai/flows/fraud-detection.ts';
 import '@/ai/flows/extract-items-from-receipt.ts';
+import '@/ai/flows/generate-warranty-pass.ts';
+import '@/ai/flows/generate-reminder-pass.ts';
