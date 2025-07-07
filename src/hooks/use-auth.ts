@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!auth || !googleProvider) {
       toast({
           title: "Configuration Error",
-          description: "Firebase is not configured. Please add your credentials.",
+          description: "Firebase is not configured. Please check your credentials.",
           variant: "destructive"
       });
       return;
@@ -49,27 +49,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged will handle setting the user and loading state
+      // onAuthStateChanged will handle setting the user and redirecting.
       toast({ title: "Successfully signed in!" });
     } catch (error: any) {
       console.error("Error signing in: ", error);
-
-      // If the error is due to a closed popup and we're on a non-local domain,
-      // it's likely an authorization issue.
-      if (error.code === 'auth/popup-closed-by-user' && typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
-        toast({
-          title: "Sign-In Misconfigured",
-          description: "Your live URL must be added to the 'Authorized domains' list in your Firebase Authentication settings to allow sign-in.",
-          variant: "destructive",
-          duration: 10000,
-        });
+      // Don't show a toast for user-cancelled popups.
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        toast({ title: "Sign in failed", description: "Could not sign in with Google. Please try again.", variant: "destructive" });
       }
-      // Don't show a generic "Sign in failed" toast for user-cancelled flows.
-      else if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-        toast({ title: "Sign in failed", description: error.message || "Could not sign in.", variant: "destructive" });
-      }
-
-      setLoading(false); // set loading false on error because onAuthStateChanged won't fire.
+      // Set loading to false on error, as onAuthStateChanged might not fire.
+      setLoading(false);
     }
   };
 
