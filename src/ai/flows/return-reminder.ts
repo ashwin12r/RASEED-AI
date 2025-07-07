@@ -37,14 +37,17 @@ const prompt = ai.definePrompt({
   name: 'returnReminderPrompt',
   input: {schema: ReturnReminderInputSchema},
   output: {schema: ReturnReminderOutputSchema},
-  prompt: `You are an expert at parsing receipts for return policy information.
-  Analyze the following receipt and identify all items and their return-by dates.
-  If the return policy is mentioned (e.g., "30-day returns"), calculate the return-by date from the purchase date.
-  Assume a standard 14-day return policy if not specified.
+  prompt: `You are an expert at parsing receipts for return policy information. Your task is to find items that can be returned and set a reminder.
+  Analyze the following receipt.
+  Only identify items that are explicitly eligible for return based on the receipt's text.
+  Do NOT create reminders for perishable goods like food from restaurants or groceries unless a return policy is explicitly mentioned for them.
+  For eligible items, identify the product name, purchase date, and calculate the return-by date.
+  If a return policy is mentioned (e.g., "30-day returns"), use it. If no policy is mentioned for a returnable item (e.g., clothing, electronics), you can assume a standard 14-day return policy.
+  For non-returnable items, do not include them in your output.
 
   Receipt Image: {{media url=receiptDataUri}}
 
-  Return the output in JSON format. If no items can be returned, return an empty reminders array.
+  Return the output in JSON format. If no items can be returned, you MUST return an empty reminders array.
   `,
 });
 
