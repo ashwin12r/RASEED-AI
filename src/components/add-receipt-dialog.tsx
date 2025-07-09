@@ -1,3 +1,4 @@
+
 'use client'
 import React, { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -12,10 +13,10 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Loader2, Upload, Sparkles, Check, FileText, Video, Camera } from "lucide-react"
+import { Loader2, Upload, Sparkles, Check, FileText, Video, Camera, SwitchCamera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { categorizeReceipt, ReceiptDetails } from "@/ai/flows/dynamic-categorization"
-import { Alert, AlertDescription, AlertTitle, AlertIcon } from "@/components/ui/alert"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useReceipts } from "@/hooks/use-receipts"
 import { trackWarranty } from "@/ai/flows/warranty-tracker"
 import { setReturnReminder } from "@/ai/flows/return-reminder"
@@ -37,6 +38,8 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(true);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | undefined>(undefined);
 
   // General state
   const [mediaDataUri, setMediaDataUri] = useState<string | null>(null);
@@ -59,13 +62,48 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
     setIsSaving(false);
     setIsOpen(false);
     setActiveTab("upload");
+    setVideoDevices([]);
+    setCurrentDeviceId(undefined);
   }
 
-  // Camera Permission Effect
+  // Camera Setup Effect
   useEffect(() => {
-    const getCameraPermission = async () => {
+    const cleanupStream = () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+    };
+
+    const setupCamera = async () => {
+      cleanupStream();
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // First get a generic stream to prompt for permissions
+        await navigator.mediaDevices.getUserMedia({ video: true });
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        setVideoDevices(cameras);
+
+        if (cameras.length === 0) {
+          console.error('No video input devices found.');
+          setHasCameraPermission(false);
+          return;
+        }
+
+        // Prefer the back camera ('environment') if available, otherwise use the first one.
+        const backCamera = cameras.find(d => d.label.toLowerCase().includes('back'));
+        const deviceIdToUse = currentDeviceId || backCamera?.deviceId || cameras[0].deviceId;
+        if (!currentDeviceId) {
+          setCurrentDeviceId(deviceIdToUse);
+        }
+        
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceIdToUse } }
+        });
+
         setHasCameraPermission(true);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -77,18 +115,18 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
     };
     
     if (isOpen && activeTab === 'camera') {
-      getCameraPermission();
+      setupCamera();
     }
 
-    return () => {
-      // Stop camera stream when dialog closes or tab changes
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
-    };
-  }, [isOpen, activeTab]);
+    return cleanupStream;
+  }, [isOpen, activeTab, currentDeviceId]);
+
+  const handleSwitchCamera = () => {
+    if (videoDevices.length < 2) return;
+    const currentIndex = videoDevices.findIndex(d => d.deviceId === currentDeviceId);
+    const nextIndex = (currentIndex + 1) % videoDevices.length;
+    setCurrentDeviceId(videoDevices[nextIndex].deviceId);
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0] || null;
@@ -105,8 +143,6 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
                 setFilePreview(dataUri);
             } else if (selectedFile.type.startsWith('video/')) {
                 setFileType('video');
-                // For video, we don't set filePreview to the data URI to avoid performance issues.
-                // We'll create an object URL for the preview instead.
                 setFilePreview(URL.createObjectURL(selectedFile));
             } else if (selectedFile.type === 'application/pdf') {
                 setFileType('pdf');
@@ -195,9 +231,8 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
             description: `Successfully saved ${analysisResult.length} receipt(s). Scanning for warranties and reminders...`,
         });
         
-        resetDialog(); // Close dialog immediately for better UX
+        resetDialog();
 
-        // Run background scans for warranties and reminders
         const [warrantyResult, reminderResult] = await Promise.all([
             trackWarranty({ receiptDataUri: mediaDataUri }),
             setReturnReminder({ receiptDataUri: mediaDataUri })
@@ -291,7 +326,7 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
               <Upload className="mr-2 h-4 w-4" /> Upload File
             </TabsTrigger>
             <TabsTrigger value="camera">
-              <Camera className="mr-2 h-4 w-4" /> Live Camera
+              <Camera className="mr-2 h-4 w-4" /> Camera
             </TabsTrigger>
           </TabsList>
           <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
@@ -319,10 +354,18 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
                     </AlertDescription>
                   </Alert>
                 )}
-                <Button onClick={handleCaptureAndAnalyze} className="w-full" disabled={isLoading || isSaving || !hasCameraPermission}>
-                    <Camera className="mr-2 h-4 w-4" />
-                    Capture & Analyze
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleCaptureAndAnalyze} className="w-full" disabled={isLoading || isSaving || !hasCameraPermission}>
+                        <Camera className="mr-2 h-4 w-4" />
+                        Capture & Analyze
+                    </Button>
+                    {videoDevices.length > 1 && (
+                        <Button onClick={handleSwitchCamera} variant="outline" size="icon" disabled={isLoading || isSaving || !hasCameraPermission}>
+                           <SwitchCamera className="h-5 w-5" />
+                           <span className="sr-only">Switch Camera</span>
+                        </Button>
+                    )}
+                </div>
               </div>
             </TabsContent>
             
@@ -366,7 +409,6 @@ export function AddReceiptDialog({ trigger }: { trigger: React.ReactNode }) {
                 Analyze File
               </Button>
           ) : (
-            // The Capture & Analyze button is already inside the tab content for camera
             <Button variant="outline" onClick={resetDialog} disabled={isLoading || isSaving}>Cancel</Button>
           )}
         </DialogFooter>
