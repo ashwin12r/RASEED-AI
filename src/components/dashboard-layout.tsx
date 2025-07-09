@@ -54,7 +54,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="p-1.5 bg-primary rounded-lg">
                 <WalletLogoIcon className="h-8 w-auto" />
             </div>
-            <span className="text-foreground group-data-[collapsible=icon]:hidden">Project Raseed</span>
+            <span className="text-foreground group-data-[collapsible=icon]:hidden">Raseed AI</span>
           </Link>
         </SidebarHeader>
         <SidebarContent>
@@ -112,7 +112,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
                 <div className="p-1.5 bg-primary rounded-lg">
                     <WalletLogoIcon className="h-8 w-auto" />
                 </div>
-                <span className="text-foreground">Project Raseed</span>
+                <span className="text-foreground">Raseed AI</span>
             </button>
         </header>
         <main className="p-4 lg:p-6">

@@ -28,7 +28,7 @@ export function FirebaseConfigError() {
             <h3 className="font-semibold">Step 1: Find your Firebase Config Keys</h3>
             <ol className="list-decimal list-inside space-y-2 pl-2">
               <li>
-                Open the Firebase Console and go to your <span className="font-semibold">Project Raseed</span> project.
+                Open the Firebase Console and go to your <span className="font-semibold">Raseed AI</span> project.
               </li>
               <li>
                 Click the <Cog className="inline-block w-4 h-4 mx-1" /> gear icon next to "Project Overview", then select

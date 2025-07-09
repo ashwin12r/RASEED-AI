@@ -10,7 +10,7 @@ export const WalletLogoIcon = ({ className }: { className?: string }) => {
   return (
     <Image
       src="/logo.png"
-      alt="Project Raseed Logo"
+      alt="Raseed AI Logo"
       width={185}
       height={80}
       className={className}

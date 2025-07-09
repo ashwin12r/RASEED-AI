@@ -11,7 +11,7 @@ import { RemindersProvider } from '@/hooks/use-reminders'
 import { ChatProvider } from '@/hooks/use-chat'
 
 export const metadata: Metadata = {
-  title: 'Project Raseed',
+  title: 'Raseed AI',
   description: 'Manage your receipts and spending with AI.',
 }
 

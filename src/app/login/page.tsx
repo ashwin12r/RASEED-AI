@@ -40,7 +40,7 @@ export default function LoginPage() {
                 <WalletLogoIcon className="h-14 w-auto" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Welcome to Project Raseed</CardTitle>
+          <CardTitle className="text-2xl">Welcome to Raseed AI</CardTitle>
           <CardDescription>Sign in to continue to your dashboard</CardDescription>
         </CardHeader>
         <CardContent>

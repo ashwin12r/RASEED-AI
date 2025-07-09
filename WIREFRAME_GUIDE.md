@@ -1,6 +1,6 @@
-# Project Raseed: Wireframe & Mockup Guide
+# Raseed AI: Wireframe & Mockup Guide
 
-This document provides a breakdown of the key screens and components to be designed for the Project Raseed application. Use this as a guide for creating low-fidelity wireframes and high-fidelity mockups.
+This document provides a breakdown of the key screens and components to be designed for the Raseed AI application. Use this as a guide for creating low-fidelity wireframes and high-fidelity mockups.
 
 ---
 
@@ -20,7 +20,7 @@ This document provides a breakdown of the key screens and components to be desig
 *   **Goal**: Provide a simple and secure entry point for the user.
 *   **Key Elements**:
     *   App Logo (`WalletLogoIcon`)
-    *   App Name ("Project Raseed")
+    *   App Name ("Raseed AI")
     *   Tagline ("Sign in to continue to your dashboard")
     *   Primary Call-to-Action: "Sign in with Google" Button (must include the Google icon).
 

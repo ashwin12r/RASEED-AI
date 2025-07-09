@@ -1,7 +1,7 @@
 
-# Project Raseed: Application Architecture
+# Raseed AI: Application Architecture
 
-This document provides a high-level overview of the architecture for the Project Raseed application.
+This document provides a high-level overview of the architecture for the Raseed AI application.
 
 ## 1. Core Technologies
 

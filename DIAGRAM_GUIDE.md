@@ -1,6 +1,6 @@
-# Project Raseed: Use-Case and Process Flow Guide
+# Raseed AI: Use-Case and Process Flow Guide
 
-This document provides the key actors, use-cases, and process flows for the Project Raseed application. You can use this content to create formal UML diagrams like Use-Case Diagrams or Process Flow Diagrams.
+This document provides the key actors, use-cases, and process flows for the Raseed AI application. You can use this content to create formal UML diagrams like Use-Case Diagrams or Process Flow Diagrams.
 
 ---
 
