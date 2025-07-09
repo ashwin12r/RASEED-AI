@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { AuthProvider } from '@/hooks/use-auth'
 import { WarrantiesProvider } from '@/hooks/use-warranties'
 import { RemindersProvider } from '@/hooks/use-reminders'
+import { ChatProvider } from '@/hooks/use-chat'
 
 export const metadata: Metadata = {
   title: 'Project Raseed',
@@ -37,9 +38,11 @@ export default function RootLayout({
             <WarrantiesProvider>
               <RemindersProvider>
                 <ReceiptsProvider>
-                  <DashboardLayout>
-                    {children}
-                  </DashboardLayout>
+                  <ChatProvider>
+                    <DashboardLayout>
+                      {children}
+                    </DashboardLayout>
+                  </ChatProvider>
                 </ReceiptsProvider>
               </RemindersProvider>
             </WarrantiesProvider>

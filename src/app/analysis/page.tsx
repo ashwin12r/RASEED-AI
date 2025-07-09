@@ -22,15 +22,7 @@ import { analyzeSpending } from "@/ai/flows/spending-analysis"
 import { generateShoppingListPass } from "@/ai/flows/generate-shopping-list-pass"
 import { useToast } from "@/hooks/use-toast"
 import { textToSpeech } from "@/ai/flows/text-to-speech"
-
-interface Message {
-  id: number;
-  text: React.ReactNode;
-  sender: 'user' | 'bot';
-  walletJwt?: string;
-  shoppingListItems?: string[];
-  shoppingListStore?: string;
-}
+import { useChat, Message } from "@/hooks/use-chat"
 
 interface LanguageOption {
   code: string;
@@ -47,15 +39,8 @@ const languages: LanguageOption[] = [
 
 
 export default function AnalysisPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      text: "Welcome! Ask me anything about your spending. For example: 'How much did I spend on dining out last week?' or 'Create a shopping list for pasta night.'",
-      sender: 'bot'
-    }
-  ])
+  const { messages, addMessage, isLoading, setIsLoading } = useChat();
   const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [currentLanguage, setCurrentLanguage] = useState(languages[0].code);
@@ -130,22 +115,21 @@ export default function AnalysisPage() {
 
     if (query.trim() === "" || isLoading) return
     
-    const userMessage: Message = { id: Date.now(), text: query, sender: 'user' }
-    setMessages(prev => [...prev, userMessage])
+    const userMessage: Omit<Message, 'id'> = { text: query, sender: 'user' }
+    addMessage(userMessage)
     
     setInput("")
     setIsLoading(true)
 
     const handleAiResponse = async () => {
       try {
-        let botResponse: Message;
+        let botResponse: Omit<Message, 'id'>;
         let textForSpeech = "";
 
         if (query.toLowerCase().includes('shopping list')) {
           const result = await generateShoppingListPass({ query });
           textForSpeech = "Here is the shopping list you requested. You can add it to your Google Wallet.";
           botResponse = {
-            id: Date.now() + 1,
             text: textForSpeech,
             sender: 'bot',
             walletJwt: result.jwt,
@@ -156,7 +140,6 @@ export default function AnalysisPage() {
           if (receipts.length === 0) {
             textForSpeech = "I don't have any receipt data to analyze. Please add some receipts first.";
             botResponse = {
-              id: Date.now() + 1,
               text: textForSpeech,
               sender: 'bot'
             };
@@ -165,7 +148,6 @@ export default function AnalysisPage() {
             textForSpeech = result.summary || "I'm not sure how to answer that.";
             if (result.savingsSuggestions) textForSpeech += ` ${result.savingsSuggestions}`;
             botResponse = {
-              id: Date.now() + 1,
               text: (
                 <>
                   <p>{result.summary}</p>
@@ -176,7 +158,7 @@ export default function AnalysisPage() {
             };
           }
         }
-        setMessages(prev => [...prev, botResponse]);
+        addMessage(botResponse);
 
         if (voiceQuery) {
           setIsSpeaking(true);
