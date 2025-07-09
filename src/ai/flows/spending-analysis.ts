@@ -47,7 +47,7 @@ const prompt = ai.definePrompt({
 
 Answer the question based on the provided receipt data. Provide a summary of the user's spending, and suggest ways to save money. Share the most relevant insights about the user's finances.
 {{#if language}}
-You MUST respond in the following language: {{language}}.
+You MUST respond in the {{language}} language. Your response must be written in the native script for that language (e.g., for Tamil, use Tamil script; for Hindi, use Devanagari script). Do not use English transliteration.
 {{else}}
 Respond in English.
 {{/if}}
