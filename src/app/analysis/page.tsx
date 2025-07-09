@@ -6,7 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Wallet, Mic, Volume2 } from "lucide-react"
+import { Send, Wallet, Mic, Volume2, MoreVertical } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { useReceipts } from "@/hooks/use-receipts"
 import { analyzeSpending } from "@/ai/flows/spending-analysis"
@@ -23,6 +32,20 @@ interface Message {
   shoppingListStore?: string;
 }
 
+interface LanguageOption {
+  code: string;
+  name: string;
+}
+
+const languages: LanguageOption[] = [
+  { code: 'en-US', name: 'English' },
+  { code: 'ta-IN', name: 'Tamil' },
+  { code: 'ml-IN', name: 'Malayalam' },
+  { code: 'hi-IN', name: 'Hindi' },
+  { code: 'te-IN', name: 'Telugu' },
+];
+
+
 export default function AnalysisPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -35,6 +58,9 @@ export default function AnalysisPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const [currentLanguage, setCurrentLanguage] = useState(languages[0].code);
+
+  const selectedLanguageName = languages.find(l => l.code === currentLanguage)?.name || 'English';
   
   const { receipts } = useReceipts()
   const { toast } = useToast()
@@ -58,7 +84,7 @@ export default function AnalysisPage() {
 
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
-    recognition.lang = 'en-US';
+    recognition.lang = currentLanguage;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -80,7 +106,7 @@ export default function AnalysisPage() {
     }
 
     recognitionRef.current = recognition;
-  }, [toast]);
+  }, [toast, currentLanguage]);
 
   useEffect(() => {
     if (scrollViewportRef.current) {
@@ -135,7 +161,7 @@ export default function AnalysisPage() {
               sender: 'bot'
             };
           } else {
-            const result = await analyzeSpending({ query, receiptData: JSON.stringify(receipts) });
+            const result = await analyzeSpending({ query, receiptData: JSON.stringify(receipts), language: selectedLanguageName });
             textForSpeech = result.summary || "I'm not sure how to answer that.";
             if (result.savingsSuggestions) textForSpeech += ` ${result.savingsSuggestions}`;
             botResponse = {
@@ -180,9 +206,30 @@ export default function AnalysisPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)]">
-      <div className="p-4 border-b">
-        <h1 className="text-2xl font-bold md:text-3xl">Spending Analysis</h1>
-        <p className="text-muted-foreground">Ask AI about your spending habits.</p>
+      <div className="p-4 border-b flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold md:text-3xl">Spending Analysis</h1>
+          <p className="text-muted-foreground">Ask AI about your spending habits.</p>
+        </div>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <MoreVertical className="h-5 w-5" />
+                    <span className="sr-only">Language options</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Select Language</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup value={currentLanguage} onValueChange={setCurrentLanguage}>
+                    {languages.map((lang) => (
+                        <DropdownMenuRadioItem key={lang.code} value={lang.code}>
+                            {lang.name}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full" viewportRef={scrollViewportRef}>

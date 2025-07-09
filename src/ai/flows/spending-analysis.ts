@@ -18,6 +18,7 @@ const AnalyzeSpendingInputSchema = z.object({
     .string()
     .describe("A user's question about their spending habits, e.g., 'How much did I spend on groceries last month?'"),
   receiptData: z.string().describe('A JSON string containing the user receipts data.'),
+  language: z.string().optional().describe('The language for the response (e.g., "Tamil", "Hindi"). Defaults to English.'),
 });
 export type AnalyzeSpendingInput = z.infer<typeof AnalyzeSpendingInputSchema>;
 
@@ -44,13 +45,18 @@ const prompt = ai.definePrompt({
   output: {schema: AnalyzeSpendingOutputSchema},
   prompt: `You are a personal finance assistant. You have access to the user's receipt data, and the user is asking a question about their spending habits.
 
+Answer the question based on the provided receipt data. Provide a summary of the user's spending, and suggest ways to save money. Share the most relevant insights about the user's finances.
+{{#if language}}
+You MUST respond in the following language: {{language}}.
+{{else}}
+Respond in English.
+{{/if}}
+
 Receipt Data: {{{receiptData}}}
 
 Question: {{{query}}}
 
-Answer the question based on the provided receipt data. Provide a summary of the user's spending, and suggest ways to save money. Share the most relevant insights about the user's finances.
-
-If you can't answer the question with the provided data, say that you can't.`,
+If you can't answer the question with the provided data, say that you can't in the requested language.`,
 });
 
 const analyzeSpendingFlow = ai.defineFlow(
