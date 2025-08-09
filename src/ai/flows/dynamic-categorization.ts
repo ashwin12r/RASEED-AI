@@ -66,7 +66,7 @@ const categorizeReceiptFlow = ai.defineFlow(
     outputSchema: CategorizeReceiptsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await categorizeReceiptPrompt(input);
     return output!;
   }
 );
