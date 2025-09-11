@@ -41,7 +41,7 @@ const generateReminderPassFlow = ai.defineFlow(
     const issuerId = process.env.GOOGLE_WALLET_ISSUER_ID;
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    let appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
     if (!issuerId || !serviceAccountEmail || !serviceAccountKey || !appUrl) {
       throw new Error("Google Wallet credentials or App URL are not configured in environment variables.");
@@ -51,7 +51,7 @@ const generateReminderPassFlow = ai.defineFlow(
     const passId = uuidv4();
     const passClass = 'reminder'; // Should be pre-created in Google Wallet Console
 
-    const passObject = {
+    const passObject: any = {
       id: `${issuerId}.${passId}`,
       classId: `${issuerId}.${passClass}`,
       genericType: 'GENERIC_TYPE_UNSPECIFIED',
@@ -86,22 +86,29 @@ const generateReminderPassFlow = ai.defineFlow(
           body: `Product: ${reminder.productName}\nPurchase Date: ${new Date(reminder.purchaseDate).toLocaleDateString()}`
         },
       ],
-      linksModuleData: {
-          uris: [
-              {
-                  uri: `${appUrl}/reminders?id=${reminder.id}`,
-                  description: 'View Reminder in App'
-              }
-          ]
-      }
     };
     
+    // Only add the app link if not on localhost
+    if (!appUrl.includes('localhost')) {
+        passObject.linksModuleData = {
+            uris: [
+                {
+                    uri: `${appUrl}/reminders?id=${reminder.id}`,
+                    description: 'View Reminder in App'
+                }
+            ]
+        };
+    }
+    
     // 3. Create and sign the JWT
+    // If running locally, use a placeholder public URL for the origin to prevent loading issues.
+    const originUrl = appUrl.includes('localhost') ? 'https://google.com' : appUrl;
+    
     const claims = {
       iss: serviceAccountEmail,
       aud: 'google',
       typ: 'savetowallet',
-      origins: [appUrl],
+      origins: [originUrl],
       payload: {
         genericObjects: [passObject]
       }
